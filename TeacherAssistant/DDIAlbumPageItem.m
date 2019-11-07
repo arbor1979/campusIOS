@@ -108,7 +108,7 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
     UIBarButtonItem * button2 = [[UIBarButtonItem  alloc]initWithBarButtonSystemItem:                                        UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
     //定义完成按钮
-    UIBarButtonItem * doneButton = [[UIBarButtonItem alloc]initWithTitle:@"完成" style:UIBarButtonItemStyleBordered  target:self action:@selector(resignKeyboard)];
+    UIBarButtonItem * doneButton = [[UIBarButtonItem alloc]initWithTitle:@"完成" style:UIBarButtonItemStyleDone  target:self action:@selector(resignKeyboard)];
     //在toolBar上加上这些按钮
     NSArray * buttonsArray = [NSArray arrayWithObjects:button1,button2,doneButton,nil];
     [topView setItems:buttonsArray];

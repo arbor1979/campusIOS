@@ -14,7 +14,7 @@ extern NSString *kServiceURL;
 extern NSString *kUserIndentify;
 extern int kUserType;
 extern NSString *kInitURL;
-
+extern NSMutableDictionary *teacherInfoDic;
 @interface DDIKeTangPingJia ()
 
 @end
@@ -34,8 +34,8 @@ extern NSString *kInitURL;
     self.summaryText.layer.borderColor = [UIColor grayColor].CGColor;
     self.summaryText.layer.borderWidth =1.0;
     self.summaryText.layer.cornerRadius =5.0;
-    rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"保存" style:UIBarButtonItemStyleBordered target:self action:@selector(savePingJia)];
-    
+    rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"保存" style:UIBarButtonItemStyleDone target:self action:@selector(savePingJia)];
+    bWanzixi=false;
     if(kUserType==1)
     {
         
@@ -53,21 +53,70 @@ extern NSString *kInitURL;
         
         _scheduleArray=[[NSMutableArray alloc] initWithArray:[userInfoDic objectForKey:@"教师上课记录"]];
         _classInfoDic=[[NSMutableDictionary alloc] initWithDictionary:[_scheduleArray objectAtIndex:self.classIndex.intValue]];
-        
-        NSUInteger  index=[_dengjiArray indexOfObject:[_classInfoDic objectForKey:@"课堂纪律"]];
-        if(index==NSNotFound)
-            iJiLvIndex=0;
-        else
-            iJiLvIndex=(int)index;
-        index=[_dengjiArray indexOfObject:[_classInfoDic objectForKey:@"教室卫生"]];
-        if(index==NSNotFound)
-            iWeiShengIndex=0;
-        else
-            iWeiShengIndex=(int)index;
-        
-        self.neiRongText.text=[_classInfoDic objectForKey:@"授课内容"];
-        self.zuoYeText.text=[_classInfoDic objectForKey:@"作业布置"];
-        self.summaryText.text=[_classInfoDic objectForKey:@"课堂情况简要"];
+        NSArray *shouduanarr=[userInfoDic objectForKey:@"教学日志_信息化手段"];
+        if(shouduanarr!=nil && shouduanarr.count>0)
+        {
+            for(int i=0;i<shouduanarr.count;i++)
+            {
+                NSString *item=[shouduanarr objectAtIndex:i];
+                if([item isEqualToString:@"其他"] || [item isEqualToString:@"其它"])
+                {
+                    UITextField *txtField=[[UITextField alloc] initWithFrame:CGRectMake(0, 0, 100, 30)];
+                    [txtField setPlaceholder:item];
+                    [txtField setBackgroundColor:[UIColor whiteColor]];
+                    txtField.layer.borderColor = [UIColor grayColor].CGColor;
+                    txtField.layer.borderWidth =1.0;
+                    txtField.layer.cornerRadius =5.0;
+                    [_stackShouduan addArrangedSubview:txtField];
+                }
+                else
+                {
+                    QCheckBox *bodybtn = [[QCheckBox alloc] initWithDelegate:self];
+                    [bodybtn setTitle:item forState:UIControlStateNormal];
+                    [bodybtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+                    bodybtn.titleLabel.text=item;
+                    [_stackShouduan addArrangedSubview:bodybtn];
+                }
+            }
+        }
+        NSArray *pingtaiarr=[userInfoDic objectForKey:@"教学日志_教学平台"];
+        if(pingtaiarr!=nil && pingtaiarr.count>0)
+        {
+            for(int i=0;i<pingtaiarr.count;i++)
+            {
+                NSString *item=[pingtaiarr objectAtIndex:i];
+                QCheckBox *bodybtn = [[QCheckBox alloc] initWithDelegate:self];
+                [bodybtn setTitle:item forState:UIControlStateNormal];
+                [bodybtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+                bodybtn.titleLabel.text=item;
+                [_stackPingtai addArrangedSubview:bodybtn];
+            }
+            UITextField *txtField=[[UITextField alloc] initWithFrame:CGRectMake(0, 0, 100, 30)];
+            [txtField setPlaceholder:@"资源课程库名称"];
+            [txtField setBackgroundColor:[UIColor whiteColor]];
+            txtField.layer.borderColor = [UIColor grayColor].CGColor;
+            txtField.layer.borderWidth =1.0;
+            txtField.layer.cornerRadius =5.0;
+            [_stackPingtai addArrangedSubview:txtField];
+        }
+        NSArray *sectionTimeArray=[[userInfoDic objectForKey:@"课表规则"] objectForKey:@"节次时间"];
+        NSString *jieciStr=[_classInfoDic objectForKey:@"节次"];
+        NSArray *jieciarr=[jieciStr componentsSeparatedByString:@"-"];
+        if(sectionTimeArray!=nil)
+        {
+            for (NSDictionary *item in sectionTimeArray)
+            {
+                NSString *tmpStr=[item objectForKey:@"是否晚自习"];
+                NSString *jieci=[jieciarr objectAtIndex:0];
+                NSString *jieciNO=[item objectForKey:@"名称"];
+                if(tmpStr!=nil && [tmpStr isEqualToString:@"是"] && jieci.intValue==jieciNO.intValue)
+                {
+                    bWanzixi=true;
+                    break;
+                }
+            }
+        }
+        [self fillData];
         
     }
     else
@@ -75,6 +124,8 @@ extern NSString *kInitURL;
         goldStar=[UIImage imageNamed:@"goldStar"];
         grayStar=[UIImage imageNamed:@"star"];
     }
+    
+    
     [self getPingJiaData];
     if(kUserType==3)
     {
@@ -95,7 +146,7 @@ extern NSString *kInitURL;
     UIBarButtonItem * button2 = [[UIBarButtonItem  alloc]initWithBarButtonSystemItem:                                        UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
     //定义完成按钮
-    UIBarButtonItem * doneButton = [[UIBarButtonItem alloc]initWithTitle:@"完成" style:UIBarButtonItemStyleBordered  target:self action:@selector(resignKeyboard)];
+    UIBarButtonItem * doneButton = [[UIBarButtonItem alloc]initWithTitle:@"完成" style:UIBarButtonItemStyleDone  target:self action:@selector(resignKeyboard)];
     
     //在toolBar上加上这些按钮
     NSArray * buttonsArray = [NSArray arrayWithObjects:button1,button2,doneButton,nil];
@@ -103,6 +154,7 @@ extern NSString *kInitURL;
     
     [self.neiRongText setInputAccessoryView:topView];
     [self.zuoYeText setInputAccessoryView:topView];
+    [self.summaryText setInputAccessoryView:topView];
     
     addPhoto=[UIImage imageNamed:@"addPhoto"];
     
@@ -119,6 +171,117 @@ extern NSString *kInitURL;
         [fileManager createDirectoryAtPath:savePath withIntermediateDirectories:NO attributes:nil error:nil];
     
  
+}
+-(void)fillData
+{
+    NSUInteger  index=[_dengjiArray indexOfObject:[_classInfoDic objectForKey:@"课堂纪律"]];
+    if(index==NSNotFound)
+        iJiLvIndex=1;
+    else
+        iJiLvIndex=(int)index;
+    index=[_dengjiArray indexOfObject:[_classInfoDic objectForKey:@"教室卫生"]];
+    if(index==NSNotFound)
+        iWeiShengIndex=1;
+    else
+        iWeiShengIndex=(int)index;
+    
+    UITableViewCell *cell=[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+    for(UIView *view in cell.contentView.subviews)
+    {
+        if([view isKindOfClass:UIButton.class])
+        {
+            UIButton *btn=(UIButton *)view;
+            if(btn.tag-11==iJiLvIndex)
+                [btn setImage:[_imageSel objectAtIndex:iJiLvIndex] forState:UIControlStateNormal];
+            else
+                [btn setImage:[_imageDes objectAtIndex:btn.tag-11] forState:UIControlStateNormal];
+        }
+    }
+    cell=[self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:1]];
+    for(UIView *view in cell.contentView.subviews)
+    {
+        if([view isKindOfClass:UIButton.class])
+        {
+            UIButton *btn=(UIButton *)view;
+            if(btn.tag-11==iWeiShengIndex)
+                [btn setImage:[_imageSel objectAtIndex:iWeiShengIndex] forState:UIControlStateNormal];
+            else
+                [btn setImage:[_imageDes objectAtIndex:btn.tag-11] forState:UIControlStateNormal];
+        }
+    }
+    
+    self.neiRongText.text=[_classInfoDic objectForKey:@"授课内容"];
+    self.zuoYeText.text=[_classInfoDic objectForKey:@"作业布置"];
+    self.summaryText.text=[_classInfoDic objectForKey:@"课堂情况简要"];
+    NSString *shouduanStr=[_classInfoDic objectForKey:@"信息化手段"];
+    NSString *pingtaiStr=[_classInfoDic objectForKey:@"教学平台"];
+    if(shouduanStr!=nil)
+    {
+        shouduanStr=[shouduanStr stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@","]];
+        NSArray *tmparr= [shouduanStr componentsSeparatedByString:@","];
+        for(UIView *subview in _stackShouduan.subviews)
+        {
+            if([subview isKindOfClass:QCheckBox.class])
+            {
+                QCheckBox *check=(QCheckBox *)subview;
+                NSString *title=check.titleLabel.text;
+                if([tmparr containsObject:title])
+                {
+                    check.checked=true;
+                }
+                else
+                    check.checked=false;
+            }
+            else if([subview isKindOfClass:UITextField.class])
+            {
+                UITextField *field=(UITextField *)subview;
+                field.text=@"";
+                NSArray *shouduanarr=[userInfoDic objectForKey:@"教学日志_信息化手段"];
+                for(NSString *item in tmparr)
+                {
+                    if(![shouduanarr containsObject:item])
+                    {
+                        field.text=item;
+                        break;
+                    }
+                }
+            }
+        }
+        
+    }
+    if(pingtaiStr!=nil)
+    {
+        pingtaiStr=[pingtaiStr stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@","]];
+        NSArray *tmparr= [pingtaiStr componentsSeparatedByString:@","];
+        for(UIView *subview in _stackPingtai.subviews)
+        {
+            if([subview isKindOfClass:QCheckBox.class])
+            {
+                QCheckBox *check=(QCheckBox *)subview;
+                NSString *title=check.titleLabel.text;
+                if([tmparr containsObject:title])
+                {
+                    check.checked=true;
+                }
+                else
+                    check.checked=false;
+            }
+        }
+    }
+    NSString *ziyuanStr=[_classInfoDic objectForKey:@"资源库课程库名称"];
+    for(UIView *subview in _stackPingtai.subviews)
+    {
+        if([subview isKindOfClass:UITextField.class])
+        {
+            UITextField *field=(UITextField *)subview;
+            field.text=@"";
+            if(ziyuanStr!=nil && ziyuanStr.length>0)
+            {
+                field.text=ziyuanStr;
+            }
+        }
+    }
+    
 }
 -(void)drawImageFromArray:(NSArray *)photos parent:(UIView *)parent
 {
@@ -192,6 +355,7 @@ extern NSString *kInitURL;
     [self.tableView reloadData];
     
 }
+
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     CGFloat height=[super tableView:tableView heightForRowAtIndexPath:indexPath];
@@ -222,6 +386,22 @@ extern NSString *kInitURL;
             else
                 return 180;
         }
+        else if(indexPath.section==7)
+        {
+            NSArray *shouduanarr=[userInfoDic objectForKey:@"教学日志_信息化手段"];
+            if(shouduanarr!=nil && shouduanarr.count>0 && !bWanzixi)
+                return shouduanarr.count*30;
+            else
+                return 0;
+        }
+        else if(indexPath.section==8)
+        {
+            NSArray *pingtaiarr=[userInfoDic objectForKey:@"教学日志_教学平台"];
+            if(pingtaiarr!=nil && pingtaiarr.count>0 && !bWanzixi)
+                return (pingtaiarr.count+1)*30;
+            else
+                return 0;
+        }
         return height;
     }
     else if (indexPath.section==5 && kUserType!=1)
@@ -234,6 +414,7 @@ extern NSString *kInitURL;
     else
         return height;
 }
+
 -(void)addPhotoClick:(UIButton *)sender
 {
     if([sender.superview isEqual:_neiRongText.superview])
@@ -505,30 +686,12 @@ extern NSString *kInitURL;
     }
 }
 //隐藏键盘
-- (void)resignKeyboard {
+- (void) resignKeyboard{
     [self.neiRongText resignFirstResponder];
     [self.zuoYeText resignFirstResponder];
+    [self.summaryText resignFirstResponder];
 }
 
--(void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if(indexPath.section==0 && indexPath.row==0)
-    {
-        
-        
-        UIButton *selBtn=(UIButton *)[cell viewWithTag:iJiLvIndex+11];
-        [selBtn setImage:[_imageSel objectAtIndex:iJiLvIndex] forState:UIControlStateNormal];
-    }
-    if(indexPath.section==1 && indexPath.row==0)
-    {
-       
-        
-        UIButton *selBtn=(UIButton *)[cell viewWithTag:iWeiShengIndex+11];
-        [selBtn setImage:[_imageSel objectAtIndex:iWeiShengIndex] forState:UIControlStateNormal];
-
-    }
-    
-}
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if(kUserType==1)
@@ -538,7 +701,7 @@ extern NSString *kInitURL;
     }
     else
     {
-        if(section==0 || section==1 || section==6)
+        if(section==0 || section==1 || section==6 || section==7 || section==8)
             return 0;
     }
     return [super tableView:tableView numberOfRowsInSection:section];
@@ -549,10 +712,22 @@ extern NSString *kInitURL;
     {
         if(section==2 || section==3)
             return 0;
+        else if(section==7)
+        {
+            NSArray *shouduanarr=[userInfoDic objectForKey:@"教学日志_信息化手段"];
+            if(shouduanarr==nil || shouduanarr.count==0 || bWanzixi)
+                return 0;
+        }
+        else if(section==8)
+        {
+            NSArray *pingtaiarr=[userInfoDic objectForKey:@"教学日志_教学平台"];
+            if(pingtaiarr==nil || pingtaiarr.count==0 || bWanzixi)
+                return 0;
+        }
     }
     else
     {
-        if(section==0 || section==1 || section==6)
+        if(section==0 || section==1 || section==6 || section==7 || section==8)
             return 0;
     }
     return [super tableView:tableView heightForHeaderInSection:section];
@@ -573,6 +748,7 @@ extern NSString *kInitURL;
         else
             return @"课堂笔记";
     }
+   
     else
         return [super tableView:tableView titleForHeaderInSection:section];
     
@@ -709,6 +885,51 @@ extern NSString *kInitURL;
         [dic setObject:self.neiRongText.text  forKey:@"授课内容"];
         [dic setObject:self.zuoYeText.text  forKey:@"作业布置"];
         [dic setObject:self.summaryText.text  forKey:@"课堂情况简要"];
+        NSString *shouduanStr=@"";
+        for(UIView *subview in _stackShouduan.subviews)
+        {
+            if([subview isKindOfClass:QCheckBox.class])
+            {
+                QCheckBox *check=(QCheckBox *)subview;
+                if(check.checked)
+                {
+                    NSString *title=check.titleLabel.text;
+                    shouduanStr=[NSString stringWithFormat:@"%@,%@",shouduanStr,title];
+                }
+                
+            }
+            else if([subview isKindOfClass:UITextField.class])
+            {
+                UITextField *field=(UITextField *)subview;
+                if(field.text.length>0)
+                    shouduanStr=[NSString stringWithFormat:@"%@,%@",shouduanStr,field.text];
+            }
+        }
+        NSString *pingtaiStr=@"";
+        NSString *ziyuankuStr=@"";
+        for(UIView *subview in _stackPingtai.subviews)
+        {
+            if([subview isKindOfClass:QCheckBox.class])
+            {
+                QCheckBox *check=(QCheckBox *)subview;
+                if(check.checked)
+                {
+                    NSString *title=check.titleLabel.text;
+                    pingtaiStr=[NSString stringWithFormat:@"%@,%@",pingtaiStr,title];
+                }
+                
+            }
+            else if([subview isKindOfClass:UITextField.class])
+            {
+                UITextField *field=(UITextField *)subview;
+                if(field.text.length>0)
+                    ziyuankuStr=field.text;
+            }
+        }
+        [dic setObject:shouduanStr  forKey:@"备注1"];
+        [dic setObject:pingtaiStr  forKey:@"备注2"];
+        [dic setObject:ziyuankuStr  forKey:@"资源库课程库名称"];
+        
         NSURL *url = [NSURL URLWithString:[[kServiceURL stringByAppendingString:@"appserver.php?action=changezongjieinfo"] URLEncodedString]];
         ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
         NSError *error;
@@ -799,6 +1020,18 @@ extern NSString *kInitURL;
                    }
         else
         {
+            
+            [_classInfoDic setObject:[dict objectForKey:@"课堂纪律"]forKey:@"课堂纪律"];
+            [_classInfoDic setObject:[dict objectForKey:@"教室卫生"]forKey:@"教室卫生"];
+            [_classInfoDic setObject:[dict objectForKey:@"授课内容"]forKey:@"授课内容"];
+            [_classInfoDic setObject:[dict objectForKey:@"作业布置"]forKey:@"作业布置"];
+            [_classInfoDic setObject:[dict objectForKey:@"课堂情况简要"]forKey:@"课堂情况简要"];
+            [_classInfoDic setObject:[dict objectForKey:@"信息化手段"]forKey:@"信息化手段"];
+            [_classInfoDic setObject:[dict objectForKey:@"教学平台"]forKey:@"教学平台"];
+            [_classInfoDic setObject:[dict objectForKey:@"资源库课程库名称"]forKey:@"资源库课程库名称"];
+            [_scheduleArray setObject:_classInfoDic atIndexedSubscript:self.classIndex.intValue];
+            [userInfoDic setObject:_scheduleArray forKey:@"教师上课记录"];
+            [self fillData];
             photosArray=[[NSMutableArray alloc] initWithArray:[dict objectForKey:@"课堂笔记图片"]];
             photosArray1=[[NSMutableArray alloc] initWithArray:[dict objectForKey:@"课堂作业图片"]];
             photosArray2=[[NSMutableArray alloc] initWithArray:[dict objectForKey:@"课堂情况图片"]];
@@ -808,8 +1041,12 @@ extern NSString *kInitURL;
             
             NSString *beginStr=[_classInfoDic objectForKey:@"应该填写时间"];
             NSString *endStr=[_classInfoDic objectForKey:@"最迟填写时间"];
-            NSDate *beginDate=[CommonFunc dateFromStringShort:beginStr];
-            NSDate *endDate=[CommonFunc dateFromStringShort:endStr];
+            if(beginStr.length<=10)
+                beginStr=[beginStr stringByAppendingString:@" 00:00:00"];
+            if(endStr.length<=10)
+                endStr=[endStr stringByAppendingString:@" 23:59:59"];
+            NSDate *beginDate=[CommonFunc dateFromString:beginStr];
+            NSDate *endDate=[CommonFunc dateFromString:endStr];
             NSDate *now=[NSDate date];
             if([beginDate compare:now]==NSOrderedAscending && [endDate compare:now]==NSOrderedDescending)
             {
@@ -819,6 +1056,16 @@ extern NSString *kInitURL;
             {
                 NSString *message=[NSString stringWithFormat:@"请在 %@ 至 %@ 之间填写",beginStr,endStr];
                 alertTip = [[OLGhostAlertView alloc] initWithTitle:message message:nil];
+                [alertTip showInView:self.view];
+                _neiRongText.editable=false;
+                _zuoYeText.editable=false;
+                _summaryText.editable=false;
+                self.parentViewController.navigationItem.rightBarButtonItem =nil;
+            }
+            NSString *teacherkaoqinstate=[dict objectForKey:@"教师考勤情况"];
+            if(teacherkaoqinstate!=nil && ![teacherkaoqinstate isEqual:@"正常"])
+            {
+                alertTip = [[OLGhostAlertView alloc] initWithTitle:teacherkaoqinstate message:nil];
                 [alertTip showInView:self.view];
                 _neiRongText.editable=false;
                 _zuoYeText.editable=false;
@@ -856,18 +1103,13 @@ extern NSString *kInitURL;
                 result=@"已保存";
                 
             }
-            else
-            {
-                result=@"保存失败";
-                
-            }
+            
         }
         else if(kUserType==2)
         {
             if([result isEqualToString:@"成功"])
                 result=@"已保存";
-            else
-                result=@"保存失败";
+            
         }
         OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:result];
         [tipView show];

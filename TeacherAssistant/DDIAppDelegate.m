@@ -203,11 +203,16 @@ int kSchoolId;//学校id
 }
 -(void)getGPS
 {
+    stuLocation.latitude=0;
+    stuLocation.longitude=0;
+    stuAddress=nil;
     if ([CLLocationManager locationServicesEnabled]) { // 检查定位服务是否可用
         locationManager = [[CLLocationManager alloc] init];
         locationManager.delegate = self;
         locationManager.distanceFilter=100;
         locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+        if([[[UIDevice currentDevice] systemVersion] floatValue]>=8.0)
+            [locationManager requestWhenInUseAuthorization];
         [locationManager startUpdatingLocation]; // 开始定位
         NSLog(@"GPS 启动");
     }
@@ -215,16 +220,15 @@ int kSchoolId;//学校id
     
 }
 // 定位成功时调用
-- (void)locationManager:(CLLocationManager *)manager
-    didUpdateToLocation:(CLLocation *)newLocation
-           fromLocation:(CLLocation *)oldLocation
+-(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations
 {
+    CLLocation *newLocation=[locations firstObject];
     [locationManager stopUpdatingLocation];
-    stuLocation = newLocation.coordinate;//手机GPS
-    [self postGPS:@"INIT"];
-    
-    
-    
+    if(newLocation!=nil && stuLocation.latitude==0)
+    {
+        stuLocation = newLocation.coordinate;//手机GPS
+        [self postGPS:@"INIT"];
+    }
 }
 -(void) postGPS:(NSString *)action
 {
@@ -424,12 +428,14 @@ int kSchoolId;//学校id
         NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict && [dict objectForKey:@"LAT"])
         {
-            
+            NSString *action=[dict objectForKey:@"ACTION"];
             NSNumber *latitude=[dict objectForKey:@"LAT"];
             NSNumber *longitude=[dict objectForKey:@"LOG"];
             CLLocation *changeLocation = [[CLLocation alloc] initWithLatitude: latitude.doubleValue longitude:longitude.doubleValue];
             stuLocation.latitude=latitude.doubleValue;
             stuLocation.longitude=longitude.doubleValue;
+            if([action isEqualToString:@"INIT"])
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"getGPSXY" object:nil];
             CLGeocoder *geocoder = [[CLGeocoder alloc] init];
             [geocoder reverseGeocodeLocation:changeLocation completionHandler:^(NSArray* placemarks,NSError *error)
              {
@@ -443,7 +449,8 @@ int kSchoolId;//学校id
                      //NSLog(@"%@",plmark);
                      if(kUserType==2)
                        [self postGPS:@""];
-                     [[NSNotificationCenter defaultCenter] postNotificationName:@"getGPSAddress" object:nil];
+                     if([action isEqualToString:@"INIT"])
+                         [[NSNotificationCenter defaultCenter] postNotificationName:@"getGPSAddress" object:nil];
                  }
                  
              }];
@@ -479,6 +486,7 @@ int kSchoolId;//学校id
     }
     
 }
+/*
 - (BOOL)application:(UIApplication *)application
             openURL:(NSURL *)url
   sourceApplication:(NSString *)sourceApplication
@@ -491,4 +499,5 @@ int kSchoolId;//学校id
     
     return YES;
 }
+ */
 @end

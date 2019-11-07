@@ -408,7 +408,11 @@ extern NSString *kInitURL;//默认单点webServic
     NSData *postData=[NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&error];
     NSString *postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
     postStr=[GTMBase64 base64StringBystring:postStr];
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    NSString *urlStr;
+    if([[self.interfaceUrl lowercaseString] hasPrefix:@"http"])
+        urlStr=self.interfaceUrl;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
     NSURL *url = [NSURL URLWithString:urlStr];
     ASIFormDataRequest* request = [ASIFormDataRequest requestWithURL:url];
     [request setPostValue:postStr forKey:@"DATA"];

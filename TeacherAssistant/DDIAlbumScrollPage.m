@@ -314,7 +314,7 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
     else
         [rightBtn setBackgroundImage:[UIImage imageNamed:@"empty_heart_white"] forState:UIControlStateNormal];
     
-}
+} 
 
 
 -(void)getImageDetailInfo

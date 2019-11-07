@@ -35,6 +35,7 @@
 
 #import <UIKit/UIKit.h>
 
+
 extern CGFloat const kJSAvatarSize;
 
 typedef enum {
@@ -54,18 +55,18 @@ typedef enum {
     JSBubbleMessageStyleFlat
 } JSBubbleMessageStyle;
 
-
-@interface JSBubbleView : UIView <UIDocumentInteractionControllerDelegate>
+@protocol ViewOnClickDelegate <NSObject>
+-(void)JSBubbleViewOnClick:(NSString *)linkUrl;
+@end
+@interface JSBubbleView : UIView 
 {
-    UIButton *previewBtn;
-    UIDocumentInteractionController *documentInteractionController;
-    UITableView *tbv;
 }
 
 @property (assign, nonatomic) JSBubbleMessageType type;
 @property (assign, nonatomic) JSBubbleMessageStyle style;
 @property (nonatomic,assign) JSBubbleMediaType mediaType;
 @property (copy, nonatomic) NSString *text;
+@property (copy, nonatomic) NSString *linkUrl;
 @property (copy, nonatomic) id data;
 @property (assign, nonatomic) BOOL selectedToShowCopyMenu;
 

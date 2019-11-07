@@ -60,7 +60,7 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict)
         {

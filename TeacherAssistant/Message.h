@@ -24,6 +24,7 @@
 @property (nonatomic, assign) CGSize bubbleSize;
 @property (nonatomic) int ifsuc;
 @property (nonatomic, copy) NSString* imageUrl;
+@property (nonatomic, copy) NSString* linkUrl;
 @property (nonatomic, copy) NSMutableArray* msgIdArray;
 
 // Determines whether this message as sent by the user of the app. We will

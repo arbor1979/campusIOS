@@ -284,7 +284,7 @@
             break;
             
         case OLGhostAlertViewPositionCenter:
-            yPosition = ceilf((screenRect.size.height / 2) - (totalHeight / 2));
+            yPosition = ceilf(((screenRect.size.height+screenRect.origin.y) / 2) - (totalHeight / 2));
             break;
             
         case OLGhostAlertViewPositionTop:

@@ -13,7 +13,7 @@
 #import "DDIHelpView.h"
 #import "DDIWenJuanDetail.h"
 #import "CommonFunc.h"
-#import <AlipaySDK/AlipaySDK.h>
+//#import <AlipaySDK/AlipaySDK.h>
 #import "Order.h"
 #import "DataSigner.h"
 #import "DDICourseInfo.h"

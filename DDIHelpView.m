@@ -9,7 +9,10 @@
 #import "DDIHelpView.h"
 
 static NSDate *loginDate;
-
+extern CLLocationCoordinate2D stuLocation;
+extern NSString *stuAddress;
+extern NSString *kInitURL;
+extern NSString *kUserIndentify;
 @interface DDIHelpView ()
 
 @end
@@ -71,7 +74,11 @@ static NSDate *loginDate;
     {
         
         NSURL *url =[NSURL URLWithString:[self.urlStr stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-        NSURLRequest *request =[NSURLRequest requestWithURL:url];
+        NSMutableURLRequest *request =[NSMutableURLRequest requestWithURL:url];
+        if([self.urlStr hasSuffix:@".html"])
+        {
+            request.cachePolicy=NSURLRequestReloadIgnoringCacheData;
+        }
         [self.webView loadRequest:request];
         [self performSelector:@selector(modifyConstant) withObject:nil afterDelay:0.1];//延迟加载,执行
         
@@ -85,8 +92,72 @@ static NSDate *loginDate;
         self.navigationController.interactivePopGestureRecognizer.enabled = NO;
     }
     mediaFormat=[[NSArray alloc] initWithObjects:@"avi",@"mov",@"asf",@"mpg",@"mpeg",@"flv",@"mp4",@"wmv",@"3gp",@"rm",@"rmvb",@"mkv", nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(setGPSXY)
+                                                 name:@"getGPSXY"
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(setGPSAddress)
+                                                 name:@"getGPSAddress"
+                                               object:nil];
+    
+    [self setNewBackBtn];
+    
 }
-
+-(void)setNewBackBtn
+{
+    if(!newbackItem)
+    {
+        UIButton *backBtn = [[UIButton alloc] initWithFrame:CGRectMake(0.0, 0.0, 30.0, 26.0)];
+        [backBtn setTitle:@"" forState:UIControlStateNormal];
+        [backBtn setImage:[UIImage imageNamed:@"bg_btn_left_nor"] forState:UIControlStateNormal];
+        backBtn.imageEdgeInsets=UIEdgeInsetsMake(3, 3, 3, 3);
+        [backBtn addTarget:self action:@selector(webnaviback) forControlEvents:UIControlEventTouchUpInside];
+        UIView *tmpview=[[UIView alloc]initWithFrame:CGRectMake(0.0, 0.0, 30.0, 26.0)];
+        [tmpview addSubview:backBtn];
+        newbackItem = [[UIBarButtonItem alloc] initWithCustomView:tmpview];
+    }
+    if(!closeItem)
+    {
+        UIButton *backBtn = [[UIButton alloc] initWithFrame:CGRectMake(0.0, 0.0, 26.0, 26.0)];
+        [backBtn setTitle:@"" forState:UIControlStateNormal];
+        [backBtn setImage:[UIImage imageNamed:@"closebtn"] forState:UIControlStateNormal];
+        backBtn.imageEdgeInsets=UIEdgeInsetsMake(3, 3, 3, 3);
+        [backBtn addTarget:self action:@selector(closewindow) forControlEvents:UIControlEventTouchUpInside];
+        UIView *tmpview=[[UIView alloc]initWithFrame:CGRectMake(0.0, 0.0, 26.0, 26.0)];
+        [tmpview addSubview:backBtn];
+        closeItem = [[UIBarButtonItem alloc] initWithCustomView:tmpview];
+        
+    }
+    UIBarButtonItem *spaceItem=[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+    spaceItem.width=20;
+    if(self.webView.canGoBack)
+        self.navigationItem.leftBarButtonItems=@[newbackItem,spaceItem,closeItem];
+    else
+        self.navigationItem.leftBarButtonItems=@[closeItem];
+}
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear: animated];
+   
+    
+    
+}
+-(void)webnaviback
+{
+    if(self.webView.canGoBack)
+        [self.webView goBack];
+    else
+        [self.navigationController popViewControllerAnimated:YES];
+}
+-(void)closewindow
+{
+    if(self.navigationController.viewControllers.count>1)
+        [self.navigationController popViewControllerAnimated:YES];
+    else
+        [self.navigationController dismissViewControllerAnimated:YES completion:nil];
+}
 -(void)backClick
 {
     self.webView.hidden=YES;
@@ -116,6 +187,111 @@ UIWebViewNavigationTypeFormResubmitted
 UIWebViewNavigationTypeOther
 */
 {
+    NSString *url = [reuqest.URL absoluteString];
+    if(navigationType==UIWebViewNavigationTypeLinkClicked)
+    {
+        url=[url stringByReplacingOccurrencesOfString:@"pda/attach_show.php" withString:@"pda2014/attach_show.php"];
+        if ([url rangeOfString:@"pda2014/attach_show.php"].location != NSNotFound)
+        {
+            //跳转到你想跳转的页面
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+            return NO; //返回NO，此页面的链接点击不会继续执行，只会执行跳转到你想跳转的页面
+        }
+        
+    }
+    if([url hasPrefix:@"js://PersonInfo"])
+    {
+        NSString *weiyima=[[CommonFunc findUrlQueryString:url :@"weiyima"] URLDecodedString];
+        DDIMyInforView *itemController=[self.storyboard instantiateViewControllerWithIdentifier:@"MyInforView"];
+        itemController.userWeiYi=weiyima;
+        [self.navigationController pushViewController:itemController animated:YES];
+        return NO;
+    }
+    else if([url hasPrefix:@"js://OpenTemplateMain"])
+    {
+        NSString *templateName=[[CommonFunc findUrlQueryString:url :@"templateName"] URLDecodedString];
+        NSString *title=[[CommonFunc findUrlQueryString:url :@"title"] URLDecodedString];
+        NSString *interfaceName=[[CommonFunc findUrlQueryString:url :@"interfaceName"] URLDecodedString];
+        if([templateName isEqualToString:@"成绩"])
+        {
+            DDIChengjiTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiMain"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"考勤"])
+        {
+            DDIKaoQinTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"kaoqinMain"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"通知"])
+        {
+            DDINewsTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"newsMain"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            chengjiMain.newsType=title;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"调查问卷"])
+        {
+            DDIWenJuanTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanMain"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"博客"])
+        {
+            DDILiuYan *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"liuyanMain"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        return NO;
+    }
+    else if([url hasPrefix:@"js://OpenTemplateDetail"])
+    {
+        NSString *templateName=[[CommonFunc findUrlQueryString:url :@"templateName"] URLDecodedString];
+        NSString *title=[[CommonFunc findUrlQueryString:url :@"title"] URLDecodedString];
+        NSString *interfaceName=[[CommonFunc findUrlQueryString:url :@"interfaceName"] URLDecodedString];
+        if([templateName isEqualToString:@"成绩"])
+        {
+            DDIChengjiDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiDetail"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"考勤"])
+        {
+            DDIKaoQinDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"kaoqinDetail"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"通知"])
+        {
+            DDINewsDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"newsDetail"];
+            chengjiMain.title=title;
+            News *news=[[News alloc]init];
+            [news setUrl:interfaceName];
+            chengjiMain.news=news;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        else if([templateName isEqualToString:@"调查问卷"])
+        {
+            DDIWenJuanDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanDetail"];
+            chengjiMain.title=title;
+            chengjiMain.interfaceUrl=interfaceName;
+            [self.navigationController pushViewController:chengjiMain animated:YES];
+        }
+        return NO;
+    }
+    else if([url hasPrefix:@"js://closeWebWindow"])
+    {
+        [self.navigationController popViewControllerAnimated:YES];
+        return NO;
+    }
     return true;
 }
 - (void)webViewDidStartLoad:(UIWebView *)webView
@@ -144,9 +320,10 @@ UIWebViewNavigationTypeOther
             self.btnBack.enabled=YES;
         else
             self.btnBack.enabled=NO;
-        [webView stringByEvaluatingJavaScriptFromString:@"if(document.getElementById('region-main')) {document.body.innerHTML=document.getElementById('region-main').innerHTML;var tags=document.getElementsByTagName('a');for(var i=0;i<tags.length;i++){tags[i].innerHTML=decodeURIComponent(tags[i].innerHTML);tags[i].href=tags[i].href.replace('pluginfile.php', 'pluginfile_dandian.php?');}}"];
+        //[webView stringByEvaluatingJavaScriptFromString:@"if(document.getElementById('region-main')) {document.body.innerHTML=document.getElementById('region-main').innerHTML;var tags=document.getElementsByTagName('a');for(var i=0;i<tags.length;i++){tags[i].innerHTML=decodeURIComponent(tags[i].innerHTML);tags[i].href=tags[i].href.replace('pluginfile.php', 'pluginfile_dandian.php?');}}"];
     }
     
+    [self setNewBackBtn];
     NSURL *curURL=webView.request.URL;
     NSURL *myURL=[NSURL URLWithString:[[NSString stringWithFormat:@"%@",baseUrl] stringByAppendingString:@"my/"]];
     if([curURL isEqual:baseUrl] || [curURL isEqual:myURL])
@@ -169,8 +346,76 @@ UIWebViewNavigationTypeOther
         loginDate=[NSDate date];
         
     }
-
-    
+    //js接口调用
+    jscontext = [webView valueForKeyPath:@"documentView.webView.mainFrame.javaScriptContext"];
+    // 可以定义供js调用的方法, testMethod为js调用的方法名
+    jscontext[@"testMethod"] = ^ NSString *() {
+        if([CLLocationManager locationServicesEnabled] && [CLLocationManager authorizationStatus] == kCLAuthorizationStatusDenied) {
+            return @"请打开位置权限";
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            DDIAppDelegate *app=(DDIAppDelegate *)[UIApplication sharedApplication].delegate;
+            [app getGPS];
+        });
+        return nil;
+    };
+    jscontext[@"openCameral"] = ^ NSString *() {
+        NSArray *args=[JSContext currentArguments];
+        
+        if([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo]==AVAuthorizationStatusDenied) {
+            return @"请打开拍照权限";
+        }
+        UIImagePickerController *imagePicker = [[UIImagePickerController alloc] init];
+        if(args.count>0 && [args objectAtIndex:0]!=nil)
+           [imagePicker setTitle:[args objectAtIndex:0]];
+        imagePicker.delegate = self;
+        imagePicker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        if(args.count>1 && [args objectAtIndex:1]!=nil && [[args objectAtIndex:1] isEqualToString:@"1"])
+            imagePicker.allowsEditing=true;
+        else
+            imagePicker.allowsEditing=false;
+        imagePicker.mediaTypes =  [[NSArray alloc] initWithObjects: (NSString *) kUTTypeImage, nil];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self presentViewController:imagePicker animated:YES completion:nil];
+        });
+        return nil;
+    };
+    jscontext[@"getScanCode"] = ^ NSString *() {
+        if([AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo]==AVAuthorizationStatusDenied) {
+            return @"请打开拍照权限";
+        }
+        QRCodeController *qrcodeVC = [[QRCodeController alloc] init];
+        qrcodeVC.view.alpha = 0;
+        [qrcodeVC setDidReceiveBlock:^(NSString *result) {
+            NSMutableDictionary *resultdic=[NSMutableDictionary dictionary];
+            [resultdic setObject:result forKey:@"result"];
+            [self performSelector:@selector(handleScanResult:) withObject:resultdic afterDelay:0.1f];
+        }];
+        DDIAppDelegate *del = (DDIAppDelegate *)[UIApplication sharedApplication].delegate;
+        [del.window.rootViewController addChildViewController:qrcodeVC];
+        [del.window.rootViewController.view addSubview:qrcodeVC.view];
+        [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            qrcodeVC.view.alpha = 1;
+        } completion:^(BOOL finished) {
+        }];
+        return nil;
+    };
+    [webView stringByEvaluatingJavaScriptFromString:@"javascript:if(typeof $ !='undefined'){$(document).ready(function(){$('body').on('click','a',function(){ var _href = $(this).attr('_href');if(_href!=null && _href!='')  {location.href = _href;}});});}"];
+}
+-(void) handleScanResult:(NSDictionary *)resultDic
+{
+    NSString *result=[resultDic objectForKey:@"result"];
+    [jscontext evaluateScript:[NSString stringWithFormat:@"callbackScanCode('%@')",result]];
+}
+-(void)setGPSXY
+{
+    if(stuLocation.latitude!=0 && jscontext)
+        [jscontext evaluateScript:[NSString stringWithFormat:@"callbackGPSXY(%f,%f)",stuLocation.latitude,stuLocation.longitude]];
+}
+-(void)setGPSAddress
+{
+    if(jscontext && stuAddress!=nil && stuAddress.length>0)
+        [jscontext evaluateScript:[NSString stringWithFormat:@"callbackRealAddress('%@')",stuAddress]];
 }
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
 {
@@ -342,7 +587,21 @@ UIWebViewNavigationTypeOther
             
         }
         
-        
+    }
+    else if([request.username isEqualToString:@"上传图片"])
+    {
+        NSData *data = [request responseData];
+        NSString *dataStr=[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        dataStr=[GTMBase64 stringByBase64String:dataStr];
+        data = [dataStr dataUsingEncoding: NSUTF8StringEncoding];
+        NSMutableDictionary* dict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
+        NSString * status=[dict objectForKey:@"STATUS"];
+        if([status.lowercaseString isEqualToString:@"ok"])
+        {
+            NSString *fileurl=[dict objectForKey:@"文件地址"];
+            if(jscontext && fileurl!=nil && fileurl.length>0)
+                [jscontext evaluateScript:[NSString stringWithFormat:@"callbackCamera('%@')",fileurl]];
+        }
     }
 }
 -(void)openFile:(NSURL *)fileUrl
@@ -416,11 +675,54 @@ UIWebViewNavigationTypeOther
 }
 - (void)dealloc
 {
+    self.navigationItem.rightBarButtonItem=nil;
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"getGPSXY" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"getGPSAddress" object:nil];
     for(ASIHTTPRequest *req in requestArray)
     {
         [req setDownloadProgressDelegate:nil];
         [req clearDelegatesAndCancel];
     }
 }
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
+{
+    if ([[info objectForKey:UIImagePickerControllerMediaType] isEqualToString:(NSString*)kUTTypeImage]) {
+        UIImage  *img = [info objectForKey:UIImagePickerControllerOriginalImage];
+        CGSize newsize=CGSizeMake(1280, 720);
+        img=[img scaleToSize:newsize];
+        NSData *fileData = UIImageJPEGRepresentation(img, 0.5);
+        [self uploadFile:fileData coursename:picker.title];
+        
+    }
+    [picker dismissViewControllerAnimated:YES completion:nil];
+    
+}
 
+- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
+{
+    [picker dismissViewControllerAnimated:YES completion:nil];
+}
+-(void) uploadFile:(NSData *)data coursename:(NSString *)coursename
+{
+    NSString *uploadUrl= [kInitURL stringByAppendingString:@"upload.php"];
+    NSURL *url =[NSURL URLWithString:uploadUrl];
+    
+    ASIFormDataRequest *request =[ASIFormDataRequest requestWithURL:url];
+    [request setPostFormat:ASIMultipartFormDataPostFormat];
+    [request setRequestMethod:@"POST"];
+    
+    [request addData:data withFileName:@"jpg" andContentType:@"image/jpeg" forKey:@"filename"];//This would be the file name which is accepting image object on server side e.g. php page accepting file
+    [request setPostValue:kUserIndentify forKey:@"用户较验码"];
+    [request setPostValue:coursename forKey:@"课程名称"];
+    [request setPostValue:@"0" forKey:@"老师上课记录编号"];
+    [request setPostValue:@"问卷调查" forKey:@"图片类别"];
+    [request setDelegate:self];
+    NSDictionary *dic=[NSDictionary dictionaryWithObject:data forKey:@"data"];
+    request.username=@"上传图片";
+    request.userInfo=dic;
+    request.timeOutSeconds=30;
+    [request startAsynchronous];
+    [requestArray addObject:request];
+    
+}
 @end

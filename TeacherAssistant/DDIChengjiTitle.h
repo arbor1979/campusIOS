@@ -17,8 +17,11 @@
 #import "DDIWenJuanTitle.h"
 #import "NSString+URLEncoding.h"
 #import <SDWebImage/UIImageView+WebCache.h>
+#import "DDINewsDetail.h"
+#import "News.h"
+#import "UIPopoverDlg.h"
 
-@interface DDIChengjiTitle : UITableViewController
+@interface DDIChengjiTitle : UITableViewController<EGORefreshTableHeaderDelegate>
 {
     NSArray *titleArray;
     NSString *savePath;
@@ -28,6 +31,16 @@
     NSString *btnUrl;
     NSString *btnSubmit;
     UIImage *emptyPhoto;
+    EGORefreshTableHeaderView *_refreshHeaderView;
+    BOOL _reloading;
+    bool isLoadingMore;
+    int page;
+    int allnum;
+    UIButton *filterBtn;
+    UIWindow *mainWindow;
+    NSMutableArray *filterArr;
+    UIPopoverDlg *filterDlg;
+    int lastPosition;
 }
 
 @property (nonatomic,strong) NSString *interfaceUrl;

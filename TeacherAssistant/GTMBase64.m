@@ -399,6 +399,13 @@ GTM_INLINE NSUInteger GuessDecodedLength(NSUInteger srcLen) {
 +(NSString *)stringByBase64String:(NSString *)base64String
 {
     NSString *sourceString = [[NSString alloc] initWithData:[GTMBase64 decodeData:[base64String dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO]] encoding:NSUTF8StringEncoding];
+    if(sourceString==nil)
+    {
+        NSData *data=[GTMBase64 decodeData:[base64String dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO]];
+        NSStringEncoding enc=CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingGB_18030_2000);
+        sourceString = [[NSString alloc] initWithData:data encoding:enc];
+    }
+    
     return sourceString;
 }
 
@@ -704,5 +711,17 @@ GTM_INLINE NSUInteger GuessDecodedLength(NSUInteger srcLen) {
     
     return destIndex;
 }
-
++(NSString *)base64ToSafeBase64ForURL:(NSString *)string
+{
+    string=[string stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    string=[string stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    string=[string stringByReplacingOccurrencesOfString:@"=" withString:@""];
+    return string;
+}
++(NSString *)base64FromSafeBase64ForURL:(NSString *)string
+{
+    string=[string stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
+    string=[string stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+    return string;
+}
 @end

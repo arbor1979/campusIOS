@@ -24,8 +24,14 @@ extern NSDictionary *LinkMandic;
 	selectImage=[UIImage imageNamed:@"Selected"];
     unselectImage=[UIImage imageNamed:@"Unselected"];
     selectedArray=[[NSMutableArray alloc]init];
-    [self.mTableView setFrame:CGRectMake(0, 0, self.view.frame.size.width,self.mTableView.frame.size.height-40-44)];
-    sv  =[[UIScrollView alloc] initWithFrame:CGRectMake(0,self.mTableView.frame.size.height,self.view.frame.size.width-80,40)];
+    float height=self.view.bounds.size.height-40;
+    if([UIApplication sharedApplication].statusBarFrame.size.height==44)
+        height=height-88-20;
+    else
+        height=height-64;
+    [self.mTableView setFrame:CGRectMake(0, 0, self.view.bounds.size.width, height)];
+    UIView *bottomView=[[UIView alloc] initWithFrame:CGRectMake(0, self.mTableView.frame.size.height, self.view.bounds.size.width, 40)];
+    sv  =[[UIScrollView alloc] initWithFrame:CGRectMake(0,0,self.view.bounds.size.width-80,40)];
     self.view.backgroundColor=[[UIColor alloc]initWithRed:0.937255 green:0.937255 blue:0.956863 alpha:1];
     
     sv.backgroundColor =[UIColor clearColor];
@@ -33,22 +39,25 @@ extern NSDictionary *LinkMandic;
     sv.showsVerticalScrollIndicator = NO;
     sv.showsHorizontalScrollIndicator = YES;
     sv.delegate = Nil;
-    [self.view addSubview:sv];
-    finishBtn=[[UIButton alloc]initWithFrame:CGRectMake(self.view.frame.size.width-75,self.mTableView.frame.size.height+4,70,32)];
+    [bottomView addSubview:sv];
+    
+    finishBtn=[[UIButton alloc]initWithFrame:CGRectMake(self.view.bounds.size.width-75,4,70,32)];
     finishBtn.backgroundColor=[[UIColor alloc]initWithRed:24/255.0 green:156/255.0 blue:208/255.0 alpha:1];
     [finishBtn.layer setMasksToBounds:YES];
     [finishBtn.layer setCornerRadius:5.0];
     finishBtn.titleLabel.font = [UIFont systemFontOfSize: 14.0];
     [finishBtn setTitle:@"确定" forState:UIControlStateNormal];
     [finishBtn addTarget:self action:@selector(submitSelected) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:finishBtn];
-
+    [bottomView addSubview:finishBtn];
+    [self.view addSubview:bottomView];
+    
 }
+
 -(void)viewWillAppear:(BOOL)animated
 {
-    self.navigationItem.title=@"选择联系人";
-    [super viewWillAppear:animated];
     
+    [super viewWillAppear:animated];
+    self.navigationItem.title=@"选择联系人";
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -162,7 +171,7 @@ extern NSDictionary *LinkMandic;
     UIButton *selBtn=(UIButton *)[headView viewWithTag:1003];
     if(!selBtn)
     {
-        selBtn=[[UIButton alloc]initWithFrame:CGRectMake(220, 0, 44, 44)];
+        selBtn=[[UIButton alloc]initWithFrame:CGRectMake(self.view.bounds.size.width-100, 0, 44, 44)];
         selBtn.tag=1003;
         selBtn.titleLabel.tag=section;
         [selBtn setImage:unselectImage forState:UIControlStateNormal];
@@ -295,19 +304,19 @@ extern NSDictionary *LinkMandic;
          completion:^(BOOL finished) {
          
              NSString *userid=sender.titleLabel.text;
-             if([selectedArray containsObject:userid])
+             if([self->selectedArray containsObject:userid])
              {
-                 [selectedArray removeObject:userid];
+                 [self->selectedArray removeObject:userid];
                  [self reloadScrollViewContent];
                  [self.mTableView.tableView reloadData];
-                 NSNumber *key=[duizhaoDic objectForKey:userid];
-                 NSDictionary *linkman=[allLinkManArray objectAtIndex:key.intValue];
+                 NSNumber *key=[self->duizhaoDic objectForKey:userid];
+                 NSDictionary *linkman=[self->allLinkManArray objectAtIndex:key.intValue];
                  NSString *groupName;
                  if([[linkman objectForKey:@"用户类型"] isEqualToString:@"老师"])
                      groupName=[linkman objectForKey:@"部门"];
                  else
                      groupName=[linkman objectForKey:@"班级"];
-                 int section=(int)[groupArray indexOfObject:groupName];
+                 int section=(int)[self->groupArray indexOfObject:groupName];
                  if(section>=0)
                      [self updateHeadSelImage:section];
              }

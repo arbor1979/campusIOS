@@ -70,15 +70,15 @@ extern NSString *kInitURL;//默认单点webServic
     }
     else
         self.scrollView.frame = CGRectMake(0.0, 0, self.view.frame.size.width, self.view.frame.size.height-navbarHeight-20);
-    */
+    
     if([UIScreen mainScreen].bounds.size.height<500)
         self.scrollView.frame = CGRectMake(0.0, 0, self.view.frame.size.width, self.view.frame.size.height-navbarHeight-20);
     else
         self.scrollView.frame = CGRectMake(0.0, 0, self.view.frame.size.width, self.view.frame.size.height-navbarHeight-37-20);
-    
+    */
 
-    float scrollWidth=self.scrollView.frame.size.width;
-    float scrollHeight=self.scrollView.frame.size.height;
+    float scrollWidth=self.view.frame.size.width;
+    float scrollHeight=self.view.frame.size.height-self.pageControl.frame.size.height;
     
     self.scrollView.contentSize  = CGSizeMake(self.view.frame.size.width*3, scrollHeight);
   
@@ -590,12 +590,12 @@ extern NSString *kInitURL;//默认单点webServic
 - (void) scrollViewDidScroll: (UIScrollView *) aScrollView
 {
 	CGPoint offset = aScrollView.contentOffset;
-	self.pageControl.currentPage = offset.x / self.scrollView.frame.size.width;
+	self.pageControl.currentPage = offset.x / self.view.frame.size.width;
 }
 
 - (IBAction)pageChange:(id)sender {
     NSInteger whichPage = self.pageControl.currentPage;
-    self.scrollView.contentOffset = CGPointMake(self.scrollView.frame.size.width * whichPage, 0.0f);
+    self.scrollView.contentOffset = CGPointMake(self.view.frame.size.width * whichPage, 0.0f);
 
 }
 -(void)viewWillDisappear:(BOOL)animated

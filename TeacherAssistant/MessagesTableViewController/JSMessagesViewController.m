@@ -250,7 +250,6 @@
     
     NSString *CellID = [NSString stringWithFormat:@"MessageCell_%d_%d_%d_%d_%d", type, bubbleStyle, hasTimestamp, hasAvatar,mediaType];
     JSBubbleMessageCell *cell = (JSBubbleMessageCell *)[tableView dequeueReusableCellWithIdentifier:CellID];
-    
     if(cell==nil)
     {
         cell = [[JSBubbleMessageCell alloc] initWithBubbleType:type
@@ -258,6 +257,7 @@
                                                    avatarStyle:(hasAvatar) ? avatarStyle : JSAvatarStyleNone mediaType:mediaType
                                                   hasTimestamp:hasTimestamp
                                                reuseIdentifier:CellID];
+        cell.delegate=self;
         
         UIButton *btn=[[UIButton alloc] initWithFrame:CGRectMake(5, 5, 40, 40)];
         //btn.backgroundColor=[UIColor grayColor];
@@ -301,8 +301,8 @@
 		[cell setMedia:[self.dataSource dataForRowAtIndexPath:indexPath]];
         
     }
-    
     [cell setMessage:[self.dataSource textForRowAtIndexPath:indexPath]];
+    [cell setLinkUrl:[self.dataSource linkUrlForRowAtIndexPath:indexPath]];
     [cell setBackgroundColor:tableView.backgroundColor];
     
     UIButton *lbl=(UIButton *)[cell viewWithTag:12];
@@ -648,5 +648,9 @@
 	
 	return _reloading; // should return if data source model is reloading
 	
+}
+-(void)cellOnTap:(JSBubbleView *)view
+{
+    [self.delegate cellOnTap:view];
 }
 @end

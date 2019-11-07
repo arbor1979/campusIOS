@@ -38,21 +38,9 @@ extern DDIDataModel *datam;
     if(!kIOS7)
         navBarImage=[navBarImage cutFromImage:CGRectMake(0,0,320, 44)];
     [[UINavigationBar appearance]setBackgroundImage:navBarImage forBarMetrics: UIBarMetricsDefault];
-    
-    //设置背景图片
-    
-    if ([UIScreen mainScreen].bounds.size.height==736) {
-        self.bgImage.image=[UIImage imageNamed:@"1242-2208"];
-    }
-    else if([UIScreen mainScreen].bounds.size.height==667)
-    {
-        self.bgImage.image=[UIImage imageNamed:@"750-1334"];
-    }
-    else if([UIScreen mainScreen].bounds.size.height==568)
-       self.bgImage.image=[UIImage imageNamed:@"Default-568h@2x"];
-    else
-       self.bgImage.image=[UIImage imageNamed:@"Default~iphone"];
-    
+    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
+    self.showVersion.text=[NSString stringWithFormat:@"%@ v%@",@"CopyRight©单点科技",[infoDictionary objectForKey:@"CFBundleShortVersionString"]];
+
     userDefaultes = [NSUserDefaults standardUserDefaults];
     NSString *userName = [userDefaultes stringForKey:@"用户名"];
     NSString *password = [userDefaultes stringForKey:@"密码"];
@@ -121,7 +109,7 @@ extern DDIDataModel *datam;
     
     float height = self.view.frame.size.height;
     
-    CGRect rect=CGRectMake(0.0f,-110,width,height);
+    CGRect rect=CGRectMake(0.0f,-150,width,height);
     
     self.view.frame=rect;
     
@@ -188,7 +176,7 @@ extern DDIDataModel *datam;
     }
     [self.indicator startAnimating];
     self.loginButton.enabled=NO;
-    self.demoBtn.enabled=NO;
+    //self.demoBtn.enabled=NO;
     [self postLogin];
     
 }
@@ -231,7 +219,7 @@ extern DDIDataModel *datam;
     [tipView show];
     [self.indicator stopAnimating];
     self.loginButton.enabled=YES;
-    self.demoBtn.enabled=YES;
+    //self.demoBtn.enabled=YES;
 }
 
 - (void) connectionDidFinishLoading: (NSURLConnection*) connection {
@@ -260,7 +248,7 @@ extern DDIDataModel *datam;
             
             [self.indicator stopAnimating];
             self.loginButton.enabled=YES;
-            self.demoBtn.enabled=YES;
+            //self.demoBtn.enabled=YES;
             
         }
         else
@@ -352,7 +340,7 @@ extern DDIDataModel *datam;
         }
         [self.indicator stopAnimating];
         self.loginButton.enabled=YES;
-        self.demoBtn.enabled=YES;
+        //self.demoBtn.enabled=YES;
         if(suc)
            [self openMainTabbar];
             //[self performSegueWithIdentifier:@"mainMenu" sender:nil];
@@ -378,7 +366,8 @@ extern DDIDataModel *datam;
     drawerController.leftViewController = leftSideDrawerViewController;
     drawerController.centerViewController = centerSideDrawerViewController;
     
-    [self presentViewController:drawerController animated:YES completion:nil];
+    //[self presentViewController:drawerController animated:YES completion:nil];
+    [UIApplication sharedApplication].keyWindow.rootViewController=drawerController;
 }
 //获取所有信息
 -(void) postUserInfo
@@ -386,7 +375,7 @@ extern DDIDataModel *datam;
     NSString *weekbegin=[userDefaultes valueForKey:@"weekBegin"];
     if(weekbegin==nil)
     {
-        weekbegin=@"1";
+        weekbegin=@"0";
         [userDefaultes setValue:weekbegin forKey:@"weekBegin"];
     }
     NSURL *url = [NSURL URLWithString:[[kServiceURL stringByAppendingString:@"appserver.php?action=initinfo&zip=1"] URLEncodedString]];
@@ -410,7 +399,7 @@ extern DDIDataModel *datam;
 
 -(void)hideTip
 {
-    self.labelTip.text=@"";
+    //self.labelTip.text=@"";
     //[self.userName becomeFirstResponder];
 }
 //登录框抖动

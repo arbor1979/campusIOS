@@ -27,21 +27,89 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     emptyPhoto=[UIImage imageNamed:@"empty_photo"];
     self.tableView.backgroundColor=[UIColor colorWithRed:228/255.0 green:244/255.0 blue:234/255.0 alpha:1];
     mygreen=[UIColor colorWithRed:39/255.0 green:174/255.0 blue:98/255.0 alpha:1.0f];
-    [self loadTitleData];
+    page=0;
+    allnum=0;
+    isLoadingMore=false;
+    _reloading=false;
+    //CGRect floatFrame = CGRectMake([UIScreen mainScreen].bounds.size.width - 44 - 20, [UIScreen mainScreen].bounds.size.height - 44 - 20, 44, 44);
+    //VCFloatingActionButton *addButton = [[VCFloatingActionButton alloc]initWithFrame:floatFrame normalImage:[UIImage imageNamed:@"plus"] andPressedImage:[UIImage imageNamed:@"cross"] withScrollview:self.tableView];
+    //addButton.hideWhileScrolling = YES;
+    //addButton.bAsButton=true;
+    //addButton.imageArray = @[@"cross"];
+    //addButton.labelArray = @[@"Facebook"];
+    [self loadTitleData:true page:page];
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(loadTitleData)
+                                             selector:@selector(notifiReload)
                                                  name:@"needRefreshTitle"
                                                object:nil];
     
+    CGRect floatFrame = CGRectMake([UIScreen mainScreen].bounds.size.width - 44 - 20, [UIScreen mainScreen].bounds.size.height - 100, 44, 44);
+    filterBtn=[[UIButton alloc] initWithFrame:floatFrame];
+    [filterBtn addTarget:self action:@selector(popFilterDlg) forControlEvents:UIControlEventTouchUpInside];
+    UIImage *normalImage=[UIImage imageNamed:@"plus"];
+    UIImage *pressImage=[UIImage imageNamed:@"cross"];
+    [filterBtn setImage:normalImage forState:UIControlStateNormal];
+    [filterBtn setImage:pressImage forState:UIControlStateHighlighted];
+    filterBtn.hidden=YES;
+    mainWindow = [UIApplication sharedApplication].keyWindow;
 }
-
+-(void)popFilterDlg
+{
+    if(filterDlg.isFirstResponder)
+        return;
+    if(filterDlg==nil)
+    {
+        NSString *message=@"";
+        int height=50;
+        for(int i=0;i<filterArr.count;i++)
+        {
+            NSDictionary *item=[filterArr objectAtIndex:i];
+            
+            if([[item objectForKey:@"类型"] isEqualToString:@"文本框"])
+                height+=30;
+            else if([[item objectForKey:@"类型"] isEqualToString:@"下拉框"])
+                height+=120;
+            
+        }
+        for(int i=0;i<ceil(height/20);i++)
+        {
+            message=[message stringByAppendingString:@"\n"];
+        }
+        filterDlg = [UIPopoverDlg alertControllerWithTitle:@"过滤条件" message:message preferredStyle:UIAlertControllerStyleAlert];
+        [filterDlg addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * action){
+            
+        }]];
+        [filterDlg addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action){
+            self->filterArr=[self->filterDlg saveFilterValue];
+            [self loadTitleData:true page:0];
+        }]];
+        
+    }
+    [filterDlg initSubViews:filterArr];
+    [self presentViewController:filterDlg animated:YES completion:nil];
+     
+    
+}
+-(void)notifiReload
+{
+    [self loadTitleData:false page:page];
+}
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+-(void)viewWillAppear:(BOOL)animated
+{
+    [mainWindow addSubview:filterBtn];
+}
+-(void)viewWillDisappear:(BOOL)animated
+{
+    [filterBtn removeFromSuperview];
+}
 -(void)dealloc
 {
+    filterBtn=nil;
     for(ASIHTTPRequest *req in requestArray)
     {
         [req setDownloadProgressDelegate:nil];
@@ -49,9 +117,13 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     }
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"needRefreshTitle" object:nil];
 }
--(void)loadTitleData
+-(void)loadTitleData:(Boolean) showtip page:(int) page
 {
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    NSString *urlStr;
+    if([[self.interfaceUrl lowercaseString] hasPrefix:@"http"])
+        urlStr=self.interfaceUrl;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
     NSURL *url = [NSURL URLWithString:[urlStr URLEncodedString]];
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
     NSError *error;
@@ -59,6 +131,9 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     [dic setObject:kUserIndentify forKey:@"用户较验码"];
     NSNumber *timeStamp=[[NSNumber alloc] initWithLong:[[NSDate new] timeIntervalSince1970]];
     [dic setObject:timeStamp forKey:@"DATETIME"];
+    [dic setObject:[NSNumber numberWithInt:page] forKey:@"page"];
+    if(filterArr!=nil && filterArr.count>0)
+       [dic setObject:filterArr forKey:@"过滤条件"];
     request.username=@"初始化标题";
     NSData *postData=[NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&error];
     NSString *postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
@@ -67,8 +142,11 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     [request setDelegate:self];
     [request startAsynchronous];
     [requestArray addObject:request];
-    alertTip = [[OLGhostAlertView alloc] initWithTitle:@"正在获取数据" message:nil timeout:0 dismissible:NO];
-    [alertTip showInView:self.view];
+    if(showtip)
+    {
+        alertTip = [[OLGhostAlertView alloc] initWithTitle:@"正在获取数据" message:nil timeout:0 dismissible:NO];
+        [alertTip showInView:self.view];
+    }
     
 }
 
@@ -80,20 +158,36 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
+        if(data==nil)
+        {
+            OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:@"没有任何数据"];
+            [tipView showInView:self.view];
+            return;
+        }
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict)
         {
             if(![[dict objectForKey:@"成绩数值"] isEqual:[NSNull null]])
                 titleArray=[dict objectForKey:@"成绩数值"];
+            else
+                titleArray=[NSArray array];
         }
         if(!dict || !titleArray || titleArray.count==0)
         {
             OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:@"没有任何数据"];
             [tipView showInView:self.view];
         }
+        NSString *pagestr=[dict objectForKey:@"page"];
+        if(pagestr!=nil)
+            page=pagestr.intValue;
+        NSString *allnumstr=[dict objectForKey:@"allnum"];
+        if(allnumstr!=nil)
+            allnum=allnumstr.intValue;
         [self.tableView reloadData];
-   
+        filterArr=[NSMutableArray arrayWithArray:[dict objectForKey:@"过滤条件"]];
+        if(filterArr==nil)
+            filterArr=[NSMutableArray array];
         NSString *btName=[dict objectForKey:@"右上按钮"];
         if(btName!=nil)
         {
@@ -102,16 +196,23 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             btnSubmit=[dict objectForKey:@"右上按钮Submit"];
             if(btnSubmit==nil || btnSubmit.length==0)
                 btnSubmit=@"否";
-            UIBarButtonItem *rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleBordered target:self action:@selector(addNew)];
+            UIBarButtonItem *rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleDone target:self action:@selector(addNew)];
             
             self.navigationItem.rightBarButtonItem=rightBtn;
         }
+        [self performSelector:@selector(doneLoadingTableViewData:) withObject:nil afterDelay:0.5];
+        [self performSelector:@selector(resetIsloadingMore) withObject:nil afterDelay:0.5f];
+        
+        if(filterArr.count>0)
+            filterBtn.hidden=NO;
+        else
+            filterBtn.hidden=YES;
     }
     else if([request.username isEqualToString:@"右上按钮提交"])
     {
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict && [[dict objectForKey:@"结果"] isEqualToString:@"成功"])
         {
@@ -125,8 +226,8 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             }
             else
             {
-                [self loadTitleData];
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"needRefreshTitle" object:nil];
+                [self loadTitleData:false page:page];
+
             }
         }
     }
@@ -154,14 +255,31 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             
         }
     }
-    
+    else if([request.username isEqualToString:@"附加菜单"])
+    {
+        if(alertTip)
+            [alertTip removeFromSuperview];
+        NSData *data = [request responseData];
+        NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
+        NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
+        if(dict && [[dict objectForKey:@"结果"] isEqualToString:@"成功"])
+        {
+            OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:@"操作成功"];
+            [tipView showInView:self.view];
+            [self loadTitleData:false page:page];
+        }
+    }
     
 }
 
 -(void)addNew
 {
-    
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    NSString *urlStr;
+    if([[self.interfaceUrl lowercaseString] hasPrefix:@"http"])
+        urlStr=self.interfaceUrl;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
     NSArray *tmparray=[urlStr componentsSeparatedByString:@"?"];
     urlStr=[[tmparray objectAtIndex:0] stringByAppendingString:btnUrl];
     if(btnSubmit!=nil && [btnSubmit isEqualToString:@"是"])
@@ -222,6 +340,8 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     {
         OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:[error localizedDescription]];
         [tipView show];
+        isLoadingMore=false;
+        _reloading=false;
     }
 }
 
@@ -276,6 +396,14 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
         {
             cell.detailTextLabel.backgroundColor=[UIColor colorWithRed:212/255.0f green:64/255.0f blue:148/255.0f alpha:1.0f];
         }
+        else if([theColor isEqualToString:@"goldenrod"])
+        {
+            cell.detailTextLabel.backgroundColor=[UIColor colorWithRed:218/255.0f green:165/255.0f blue:32/255.0f alpha:1.0f];
+        }
+        else if([theColor isEqualToString:@"blueviolet"])
+        {
+            cell.detailTextLabel.backgroundColor=[UIColor colorWithRed:138/255.0f green:43/255.0f blue:226/255.0f alpha:1.0f];
+        }
     }
         
     
@@ -290,7 +418,80 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
         cell.accessoryType=UITableViewCellAccessoryNone;
         cell.selectionStyle=UITableViewCellSelectionStyleNone;
     }
+    NSDictionary *addmenu=[item objectForKey:@"附加菜单"];
+    if(addmenu!=nil && addmenu.count>0)
+    {
+        UIButton *addmenubtn=[[UIButton alloc]initWithFrame:CGRectMake(0, 0, 30, 30)];
+        [addmenubtn setBackgroundImage:[UIImage imageNamed:@"pop_menu"] forState:UIControlStateNormal];
+        cell.accessoryView=addmenubtn;
+        [addmenubtn addTarget:self action:@selector(popMenu:) forControlEvents:UIControlEventTouchUpInside];
+    }
+    else
+        cell.accessoryView=nil;
+    if (_refreshHeaderView == nil) {
+        
+        EGORefreshTableHeaderView *view = [[EGORefreshTableHeaderView alloc] initWithFrame:CGRectMake(0.0f, 0.0f - self.tableView.bounds.size.height, self.view.frame.size.width, self.tableView.bounds.size.height)];
+        view.delegate = self;
+        [self.tableView addSubview:view];
+        _refreshHeaderView = view;
+        
+    }
     return cell;
+}
+-(void)popMenu:(UIButton *)btn
+{
+    UIView *tmpview=btn.superview;
+    while(![tmpview isKindOfClass:[UITableViewCell class]])
+        tmpview=tmpview.superview;
+    NSIndexPath *indexPath=[self.tableView indexPathForCell:(UITableViewCell *)tmpview];
+    NSDictionary *item=[titleArray objectAtIndex:indexPath.row];
+    
+    
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    // Create the actions.
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+        
+    }];
+    NSDictionary *addmenu=[item objectForKey:@"附加菜单"];
+    NSArray *keys=addmenu.allKeys;
+    for(NSString *key in keys)
+    {
+        if(key!=nil && key.length>0)
+        {
+            NSInteger alertstyle=UIAlertViewStyleDefault;
+            if([key isEqualToString:@"删除"])
+                alertstyle=UIAlertActionStyleDestructive;
+            UIAlertAction *otherAction = [UIAlertAction actionWithTitle:key style:alertstyle handler:^(UIAlertAction *action) {
+                NSArray *tmpArray=[self->_interfaceUrl componentsSeparatedByString:@"?"];
+                NSString *strUrl=[addmenu objectForKey:key];
+                strUrl=[tmpArray[0] stringByAppendingString:strUrl];
+                NSURL *url = [NSURL URLWithString:strUrl];
+                ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
+                NSError *error;
+                NSMutableDictionary *dic=[[NSMutableDictionary alloc] init ];
+                [dic setObject:kUserIndentify forKey:@"用户较验码"];
+                NSNumber *timeStamp=[[NSNumber alloc] initWithLong:[[NSDate new] timeIntervalSince1970]];
+                [dic setObject:timeStamp forKey:@"DATETIME"];
+                request.username=@"附加菜单";
+                NSData *postData=[NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&error];
+                NSString *postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
+                postStr=[GTMBase64 base64StringBystring:postStr];
+                [request setPostValue:postStr forKey:@"DATA"];
+                [request setDelegate:self];
+                [request setTag:indexPath.row];
+                [request startAsynchronous];
+                [self->requestArray addObject:request];
+                self->alertTip = [[OLGhostAlertView alloc] initWithTitle:[@"正在执行" stringByAppendingString:key] message:nil timeout:0 dismissible:NO];
+                [self->alertTip show];
+            }];
+            [alertController addAction:otherAction];
+        }
+    }
+    [alertController addAction:cancelAction];
+    [self presentViewController:alertController animated:YES completion:nil];
+    
+    
 }
 -(void)loadImageAndSave:(NSString *)imageUrl parentView:(UIView *)parentView indexPath:(NSIndexPath *)indexPath
 {
@@ -298,6 +499,8 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     {
         NSArray *sepArray=[imageUrl componentsSeparatedByString:@"/"];
         NSString *filename=[sepArray objectAtIndex:sepArray.count-1];
+        if(filename.length==0 && sepArray.count>1)
+            filename=[sepArray objectAtIndex:sepArray.count-2];
         filename=[savePath stringByAppendingString:filename];
         if([CommonFunc fileIfExist:filename])
         {
@@ -323,6 +526,7 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             [parentView addSubview:aiv];
             [aiv startAnimating];
             */
+            imageUrl = [imageUrl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
             NSURL *url = [NSURL URLWithString:imageUrl];
             /*
             for(ASIHTTPRequest *item in requestArray)
@@ -331,6 +535,7 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
                     return;
             }
             */
+            
             ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:url];
             request.username=@"下载图片";
             NSMutableDictionary *indexDic=[[NSMutableDictionary alloc]init];
@@ -364,8 +569,8 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
                 DDIChengjiTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiMain"];
                 chengjiMain.title=self.title;
                 NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
-                NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
-                detailURL=[NSString stringWithFormat:@"%@%@",realname,detailURL];
+                //NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
+                detailURL=[NSString stringWithFormat:@"%@%@",[tmparray objectAtIndex:0],detailURL];
                 chengjiMain.interfaceUrl=detailURL;
                 [self.navigationController pushViewController:chengjiMain animated:YES];
             }
@@ -375,8 +580,8 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
         else if([moban isEqualToString:@"调查问卷"])
         {
             NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
-            NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
-            detailURL=[NSString stringWithFormat:@"%@%@",realname,detailURL];
+            //NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
+            detailURL=[NSString stringWithFormat:@"%@%@",[tmparray objectAtIndex:0],detailURL];
             if([mobanLevel isEqualToString:@"main"])
             {
                 DDIWenJuanTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanMain"];
@@ -388,10 +593,37 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
             {
                 DDIWenJuanDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanDetail"];
                 chengjiMain.title=self.title;
-                NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,detailURL];
-                chengjiMain.interfaceUrl=urlStr;
+                //NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,detailURL];
+                chengjiMain.interfaceUrl=detailURL;
                 [self.navigationController pushViewController:chengjiMain animated:YES];
             }
+        }
+        else if([moban isEqualToString:@"通知"])
+        {
+            NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
+            //NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
+            detailURL=[NSString stringWithFormat:@"%@%@",[tmparray objectAtIndex:0],detailURL];
+            DDINewsDetail *dest=[self.storyboard instantiateViewControllerWithIdentifier:@"newsDetail"];
+            News *newone=[[News alloc] init];
+            newone.newsid=0;
+            newone.url=detailURL;
+            dest.title=self.title;
+            //NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,detailURL];
+            dest.news=newone;
+            [self.navigationController pushViewController:dest animated:YES];
+        }
+        else if([moban isEqualToString:@"浏览器"])
+        {
+            DDIHelpView *controller=[self.storyboard instantiateViewControllerWithIdentifier:@"HelpView"];
+            controller.navigationItem.title=self.title;
+            NSArray *tmparray=[detailURL componentsSeparatedByString:@"?"];
+            NSString *jumpurl;
+            if(tmparray.count>1)
+                jumpurl=[NSString stringWithFormat:@"%@&jiaoyanma=%@",detailURL,kUserIndentify];
+            else
+                jumpurl=[NSString stringWithFormat:@"%@?jiaoyanma=%@",detailURL,kUserIndentify];
+            controller.urlStr=jumpurl;
+            [self.navigationController pushViewController:controller animated:YES];
         }
             
 
@@ -404,11 +636,88 @@ extern NSString *kUserIndentify;//用户登录后的唯一识别码
     NSIndexPath *indexPath=(NSIndexPath *)sender;
     NSDictionary *item=[titleArray objectAtIndex:indexPath.row];
     NSString *detailURL=[item objectForKey:@"内容项URL"];
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
-    NSArray *tmparray=[urlStr componentsSeparatedByString:@"?"];
-    urlStr=[[tmparray objectAtIndex:0] stringByAppendingString:detailURL];
+    //NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
+    NSString *urlStr=[[tmparray objectAtIndex:0] stringByAppendingString:detailURL];
     DDIChengjiDetail *detial=segue.destinationViewController;
     detial.title=[item objectForKey:@"第一行"];
     detial.interfaceUrl=urlStr;
 }
+
+#pragma mark -
+#pragma mark UIScrollViewDelegate Methods
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView{
+    
+    [_refreshHeaderView egoRefreshScrollViewDidScroll:scrollView];
+    CGPoint offset = scrollView.contentOffset;
+    CGRect bounds = scrollView.bounds;
+    CGSize size = scrollView.contentSize;
+    UIEdgeInsets inset = scrollView.contentInset;
+    float y = offset.y + bounds.size.height - inset.bottom;
+    float h = size.height;
+    // NSLog(@"offset: %f", offset.y);
+    // NSLog(@"content.height: %f", size.height);
+    // NSLog(@"bounds.height: %f", bounds.size.height);
+    // NSLog(@"inset.top: %f", inset.top);
+    // NSLog(@"inset.bottom: %f", inset.bottom);
+    // NSLog(@"pos: %f of %f", y, h);
+    float reload_distance = 15;
+    if(y > h + reload_distance) {
+        //NSLog(@"load more rows");
+        
+        if(!isLoadingMore && titleArray.count<allnum)
+        {
+            isLoadingMore=true;
+            [self loadTitleData:false page:page+1];
+        }
+        
+    }
+    if(filterBtn && filterArr && filterArr.count>0)
+    {
+        //NSLog(@"pos: %f of %d", offset.y, lastPosition);
+        
+        if(lastPosition-offset.y>25 || offset.y==-88)
+        {
+            filterBtn.hidden=NO;
+            lastPosition=offset.y;
+        }
+        else if(offset.y-lastPosition>25)
+        {
+            filterBtn.hidden=YES;
+            lastPosition=offset.y;
+        }
+    }
+    
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+    
+    [_refreshHeaderView egoRefreshScrollViewDidEndDragging:scrollView];
+    
+}
+#pragma mark EGORefreshTableHeaderDelegate Methods
+- (void)egoRefreshTableHeaderDidTriggerRefresh:(EGORefreshTableHeaderView*)view{
+    _reloading = YES;
+    [self loadTitleData:false page:0];
+
+}
+- (BOOL)egoRefreshTableHeaderDataSourceIsLoading:(EGORefreshTableHeaderView*)view{
+    
+    return _reloading; // should return if data source model is reloading
+    
+}
+
+
+- (void)doneLoadingTableViewData:(NSNumber *)newcount
+{
+    //  model should call this when its done loading
+    _reloading = NO;
+    [_refreshHeaderView egoRefreshScrollViewDataSourceDidFinishedLoading:self.tableView];
+}
+-(void)resetIsloadingMore
+{
+    isLoadingMore=false;
+}
+
 @end

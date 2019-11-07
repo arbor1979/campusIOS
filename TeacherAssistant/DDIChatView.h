@@ -5,7 +5,6 @@
 //  Created by Yongchao on 21/11/13.
 //  Copyright (c) 2013 Yongchao. All rights reserved.
 //
-
 #import "JSMessagesViewController.h"
 #import "DDIDataModel.h"
 #import "Message.h"
@@ -16,13 +15,26 @@
 #import "OLGhostAlertView.h"
 #import "DDIMyInforView.h"
 #import "DDIStudentInfo.h"
-@interface DDIChatView : JSMessagesViewController<UIActionSheetDelegate>
+
+
+/*
+ 
+#import "DDINewsTitle.h"
+#import "DDINewsDetail.h"
+#import "DDIChengjiTitle.h"
+#import "DDIChengjiDetail.h"
+#import "DDIWenJuanTitle.h"
+#import "DDIWenJuanDetail.h"
+ */
+
+@interface DDIChatView : JSMessagesViewController<UIActionSheetDelegate,UIDocumentInteractionControllerDelegate>
 {
     UIImage *tmpImage;
     int oldMsgCount;
     UILabel *topTip;
     NSMutableArray *requestArray;
     NSTimer *aTimer;
+    UIDocumentInteractionController *documentInteractionController;
 }
 
 @property (nonatomic, strong) NSString* respondUser;

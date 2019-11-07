@@ -40,6 +40,7 @@
 
 CGFloat const kJSAvatarSize = 50.0f;
 extern Boolean kIOS7;
+extern NSString *kUserIndentify;
 #define kMarginTop 8.0f
 #define kMarginBottom 4.0f
 #define kPaddingTop 12.0f
@@ -87,30 +88,8 @@ extern Boolean kIOS7;
         self.mediaType = bubbleMediaType;
         
     }
-    if(bubbleMediaType==JSBubbleMediaTypeImage)
-    {
-        previewBtn=[[UIButton alloc]initWithFrame:CGRectZero];
-        [previewBtn addTarget:self action:@selector(previewImage) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:previewBtn];
-    }
-    if(kIOS7)
-        tbv=(UITableView *)self.superview.superview.superview;
-    else
-        tbv=(UITableView *)self.superview.superview;
-    return self;
-}
--(void)previewImage
-{
-    NSData *imageData=UIImageJPEGRepresentation(self.data,0.3);
-    NSString *tmpDir = NSTemporaryDirectory();
-    NSNumber *timeStamp=[[NSNumber alloc] initWithLong:[[NSDate new] timeIntervalSince1970]];
-    NSString *fileName=[NSString stringWithFormat:@"%@%@.png",tmpDir,timeStamp];
-    [imageData writeToFile:fileName atomically:YES];
     
-    NSURL *url = [NSURL fileURLWithPath:fileName];
-    documentInteractionController = [UIDocumentInteractionController                                                      interactionControllerWithURL:url];
-    [documentInteractionController setDelegate:self];
-    [documentInteractionController presentPreviewAnimated:YES];
+    return self;
 }
 
 - (UIViewController*)viewController {
@@ -122,18 +101,7 @@ extern Boolean kIOS7;
     }
     return nil;
 }
-- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)interactionController
-{
-    return [self viewController];
-}
--(UIView *)documentInteractionControllerViewForPreview:(UIDocumentInteractionController *)controller{
-    
-    return tbv.superview;
-}
-- (CGRect)documentInteractionControllerRectForPreview:(UIDocumentInteractionController*)controller
-{
-    return tbv.superview.frame;
-}
+
 - (void)dealloc
 {
     self.text = nil;
@@ -313,6 +281,7 @@ extern Boolean kIOS7;
 							alignment:NSTextAlignmentLeft];
 			}
 		}
+        
 	}
 	else if(self.mediaType == JSBubbleMediaTypeImage)	// media
 	{
@@ -340,7 +309,7 @@ extern Boolean kIOS7;
                     textColor = [UIColor lightTextColor];
             }
             [recivedImg drawInRect:imageFrame];
-            [previewBtn setFrame:imageFrame];
+            
 		}
 	}
 }

@@ -20,6 +20,7 @@
 #import "DDIAlbumPersonal.h"
 #import "CommonFunc.h"
 #import "NSString+URLEncoding.h"
+#import "DDIVLoginMain.h"
 
 @interface DDIMainMenu : UITableViewController <UIActionSheetDelegate,UIAlertViewDelegate>
 {
@@ -27,6 +28,7 @@
     UIImage *headImage;
     NSMutableArray *requestArray;
     NSUserDefaults *userDefaultes;
+    OLGhostAlertView *tipAlert;
 }
 @property (weak, nonatomic) IBOutlet UIButton *reloginBtn;
 @property (strong,nonatomic) IBOutlet UILabel *lblBanben;

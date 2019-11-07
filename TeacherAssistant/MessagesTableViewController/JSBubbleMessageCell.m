@@ -85,6 +85,9 @@
     [recognizer setMinimumPressDuration:0.4];
     [self addGestureRecognizer:recognizer];
     
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapHandler:)];
+    [self addGestureRecognizer:tap];
+    
 }
 
 - (void)configureTimestampLabel
@@ -212,8 +215,10 @@
 {
     self.bubbleView.text = msg;
 }
-
-
+- (void)setLinkUrl:(NSString *)linkUrl
+{
+    self.bubbleView.linkUrl=linkUrl;
+}
 - (void)setMedia:(id)data
 {
 	if ([data isKindOfClass:[UIImage class]])
@@ -376,6 +381,10 @@
 }
 
 #pragma mark - Gestures
+-(void)tapHandler:(UITapGestureRecognizer *)sender
+{
+    [self.delegate cellOnTap:self.bubbleView];
+}
 - (void)handleLongPress:(UILongPressGestureRecognizer *)longPress
 {
     if(longPress.state != UIGestureRecognizerStateBegan

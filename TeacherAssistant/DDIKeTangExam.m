@@ -45,9 +45,9 @@ extern int kUserType;
                                                  name:UIApplicationDidBecomeActiveNotification object:nil];
     
     if(kUserType==1)
-        rightBtn=[[UIBarButtonItem alloc] initWithTitle:@"开始" style:UIBarButtonItemStyleBordered target:self action:@selector(startClick:)];
+        rightBtn=[[UIBarButtonItem alloc] initWithTitle:@"开始" style:UIBarButtonItemStyleDone target:self action:@selector(startClick:)];
     else
-        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"刷新" style:UIBarButtonItemStyleBordered target:self action:@selector(submitAnswer)];
+        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"刷新" style:UIBarButtonItemStyleDone target:self action:@selector(submitAnswer)];
     
     [self timerGetStatus:nil];
 

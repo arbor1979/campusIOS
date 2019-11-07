@@ -63,7 +63,7 @@ extern int kSchoolId;
     self.searchDc.delegate=self;
     [self.searchDc  setActive:NO];
     
-    broadCastBtn=[[UIBarButtonItem alloc]initWithTitle:@"群发" style:UIBarButtonItemStyleBordered target:self action:@selector(broadCastMsg:)];
+    broadCastBtn=[[UIBarButtonItem alloc]initWithTitle:@"群发" style:UIBarButtonItemStyleDone target:self action:@selector(broadCastMsg:)];
     
 }
 -(void)broadCastMsg:(UIBarButtonItem *)sender

@@ -11,8 +11,8 @@
 #import "OLGhostAlertView.h"
 #import "ASIFormDataRequest.h"
 #import "DDICourseInfo.h"
-
-@interface DDIClassSchedule : UIViewController<UIPickerViewDataSource,UIPickerViewDelegate,UIAlertViewDelegate>
+#import "YBPopupMenu/YBPopupMenu.h"
+@interface DDIClassSchedule : UIViewController<UIPickerViewDataSource,UIPickerViewDelegate,UIAlertViewDelegate,YBPopupMenuDelegate>
 {
     NSArray *scheduleArray;
     UIButton *weekSelBtn;
@@ -36,6 +36,8 @@
     NSMutableArray *indexStrArray;
     NSArray *indexArray;
     UIStackView *myStackView;
+    NSString *banjiname;
+    NSMutableDictionary *colorMapDic;
 }
 
 @property (weak, nonatomic) IBOutlet UIImageView *bgImage;

@@ -183,4 +183,6 @@
 +(NSString *)stringByBase64String:(NSString *)base64String;
 
 +(NSString *)base64StringBystring:(NSString *)string;
++(NSString *)base64ToSafeBase64ForURL:(NSString *)string;
++(NSString *)base64FromSafeBase64ForURL:(NSString *)string;
 @end

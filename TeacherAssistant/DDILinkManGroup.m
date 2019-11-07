@@ -32,27 +32,38 @@ extern NSMutableDictionary *cacheImageDic;
     imageWoman=[UIImage imageNamed:@"woman"];
     greenTel=[UIImage imageNamed:@"greenTel"];
     hostUser=[teacherInfoDic objectForKey:@"用户唯一码"];
-    
-    friendDic=[[NSMutableDictionary alloc]init];
     requestArray=[[NSMutableArray alloc]init];
-    
     linkManSavePath=[CommonFunc getLinkManPath:hostUser];
-    if([CommonFunc fileIfExist:linkManSavePath])
+    if(friendDic==nil)
     {
-        LinkMandic=[CommonFunc readFromPlistFile:linkManSavePath];
-        [self loadLinkMansFromDic];
+        friendDic=[[NSMutableDictionary alloc]init];
+        if([CommonFunc fileIfExist:linkManSavePath])
+        {
+            LinkMandic=[CommonFunc readFromPlistFile:linkManSavePath];
+            [self loadLinkMansFromDic];
+        }
     }
+    /*
+    float height=self.view.bounds.size.height-self.tabBarController.tabBar.frame.size.height;
+    if (@available(iOS 11.0, *)) {
+        height=self.view.bounds.size.height-self.view.safeAreaInsets.top-self.view.safeAreaInsets.bottom;
+        
+    }
+     */
+    float height=self.view.bounds.size.height;
+    if([UIApplication sharedApplication].statusBarFrame.size.height==44)
+        height=height-88;
+    else
+        height=height-64;
+    self.mTableView = [[TQMultistageTableView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, height)];
     
-    
-    float height=self.view.frame.size.height-self.tabBarController.tabBar.frame.size.height-self.parentViewController.navigationController.navigationBar.frame.size.height;
-    if(kIOS7)
-        height-=20;
-    self.mTableView = [[TQMultistageTableView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width,height)];
+        
     if(kIOS7)
         self.mTableView.tableView.separatorInset=UIEdgeInsetsMake(0,0,0,0);
     self.mTableView.delegate = self;
     self.mTableView.dataSource = self;
     [self.view addSubview:self.mTableView];
+    //self.view=self.mTableView;
     headViewArray=[[NSMutableDictionary alloc]init];
     
     //在这里创建搜索栏和搜索显示控制器
@@ -224,7 +235,7 @@ extern NSMutableDictionary *cacheImageDic;
     headBtn.titleLabel.text=userid;
     
     UIButton *callBtn=(UIButton *)cell.accessoryView;
-    if(tel.length==11 && kUserType==1)
+    if(tel.length==11)
     {
         //[callBtn setBackgroundImage:greenTel forState:UIControlStateNormal];
         [callBtn setImage:greenTel forState:UIControlStateNormal];
@@ -362,10 +373,10 @@ extern NSMutableDictionary *cacheImageDic;
         label.text = [NSString stringWithFormat:@"%@",[groupArray objectAtIndex:section]];
         label.textColor = [UIColor blackColor];
         label.backgroundColor=[UIColor clearColor];
-        label.frame = CGRectMake(25, 0, 200, 44);
+        label.frame = CGRectMake(25, 0, self.view.frame.size.width-120, 44);
         
         NSArray *linkManOfGroup=[friendDic objectForKey:groupArray[section]];
-        UILabel *lbcount = [[UILabel alloc] initWithFrame:CGRectMake(225, 0, 80, 44)];
+        UILabel *lbcount = [[UILabel alloc] initWithFrame:CGRectMake(self.view.frame.size.width-95, 0, 80, 44)];
         lbcount.textAlignment=NSTextAlignmentRight;
         lbcount.textColor=[UIColor grayColor];
         lbcount.font=[UIFont systemFontOfSize:12];
@@ -391,11 +402,9 @@ extern NSMutableDictionary *cacheImageDic;
     {
         NSDictionary *linkman=nil;
         UITableViewCell *cell=sender;
-        UITableView *tableView;
-        if(kIOS7)
-            tableView=(UITableView *)cell.superview.superview;
-        else
-            tableView=(UITableView *)cell.superview;
+        UITableView *tableView =[CommonFunc getTableViewByCell:cell];
+        if(tableView==nil)
+            return;
         NSIndexPath *indexPath=[tableView indexPathForCell:cell];
         if(tableView==self.mTableView.tableView)
         {
@@ -407,7 +416,6 @@ extern NSMutableDictionary *cacheImageDic;
             linkman=[filteredMessages objectAtIndex:indexPath.row];
             [self.searchDc  setActive:NO];
         }
-        
         
         NSString *userId=[linkman objectForKey:@"用户唯一码"];
         NSString *userName=[linkman objectForKey:@"姓名"];

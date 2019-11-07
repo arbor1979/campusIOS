@@ -19,14 +19,17 @@
 #import "MDRadialProgressTheme.h"
 #import "DDIPictureBrows.h"
 #import "NSString+URLEncoding.h"
-@interface DDIWenJuanDetail : UITableViewController<UITextViewDelegate,UIActionSheetDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate,UIPickerViewDataSource,UIPickerViewDelegate>
+#import "DDIAppDelegate.h"
+#import "DDIMultiSelStudent.h"
+
+@interface DDIWenJuanDetail : UITableViewController<UITextViewDelegate,UIActionSheetDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate,UIPickerViewDataSource,UIPickerViewDelegate,UITextFieldDelegate,SelectMutiDataDelegate>
 {
     NSMutableArray *detailArray;
     NSString *savePath;
     NSMutableArray *requestArray;
     OLGhostAlertView *alertTip;
     UIToolbar * topView;
-    UITextView *activeView;
+    UIView *activeView;
     BOOL enabled;
     UIBarButtonItem *rightBtn;
     NSString *saveUrl;
@@ -39,6 +42,9 @@
     UIPickerView *pickerView;
     UIDatePicker *dtPickerView;
     NSArray *pickerArray;
+    NSArray *pickerSubArray;
+    NSArray *pickerThirdArray;
+    NSDictionary *pickerDict;
     UIButton *senderBtn;
     int curRowIndex;
     
@@ -51,6 +57,7 @@
 @property (nonatomic,strong) NSString *interfaceUrl;
 @property (nonatomic,strong) NSString *examStatus;
 @property (nonatomic,strong) NSString *autoClose;
+@property (nonatomic,strong) NSString *gpsLocation;
 @property (nonatomic,strong) NSMutableArray *parentTitleArray;
 @property (nonatomic) int key;
 @end

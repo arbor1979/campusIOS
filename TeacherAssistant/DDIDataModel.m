@@ -89,27 +89,26 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
 -(void)createTable
 {
     //消息表
-    NSString *sqlCreateTable = @"CREATE TABLE IF NOT EXISTS Messages (ID INTEGER PRIMARY KEY AUTOINCREMENT, hostUser TEXT,respondUser TEXT, msgContent TEXT,msgType TEXT, sendTime DATETIME,ifread SMALLINT,hostName TEXT,respondName TEXT,respondUserImage TEXT,ifReceive SMALLINT)";
+    NSString *sqlCreateTable = @"CREATE TABLE IF NOT EXISTS Messages (ID INTEGER PRIMARY KEY AUTOINCREMENT, hostUser TEXT,respondUser TEXT, msgContent TEXT,msgType TEXT, sendTime DATETIME,ifread SMALLINT,hostName TEXT,respondName TEXT,respondUserImage TEXT,ifReceive SMALLINT,ifsuc SMALLINT NOT NULL DEFAULT 1,imageUrl TEXT,linkUrl TEXT)";
     [self execSql:sqlCreateTable];
     char *err;
-    sqlCreateTable=@"ALTER TABLE Messages ADD ifsuc SMALLINT NOT NULL DEFAULT 1";
-    sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
-    sqlCreateTable=@"ALTER TABLE Messages ADD imageUrl TEXT NULL";
+    //sqlCreateTable=@"ALTER TABLE Messages ADD ifsuc SMALLINT NOT NULL DEFAULT 1";
+    //sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
+    sqlCreateTable=@"ALTER TABLE Messages ADD linkUrl TEXT NULL";
     sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
     sqlCreateTable = @"CREATE TABLE IF NOT EXISTS Messages_detail (ID INTEGER PRIMARY KEY AUTOINCREMENT, mainId INTEGER NOT NULL REFERENCES Messages (ID),respondUser TEXT NOT NULL,msgId TEXT NOT NULL,ifRead SMALLINT NOT NULL DEFAULT 0)";
     sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
-    sqlCreateTable = @"CREATE TABLE IF NOT EXISTS News (ID INTEGER PRIMARY KEY AUTOINCREMENT, newsid INTEGER NOT NULL,title TEXT NOT NULL,image TEXT,time TEXT,content TEXT,url TEXT,ifread SMALLINT NOT NULL DEFAULT 0)";
+    sqlCreateTable = @"CREATE TABLE IF NOT EXISTS News (ID INTEGER PRIMARY KEY AUTOINCREMENT, newsid INTEGER NOT NULL,title TEXT NOT NULL,image TEXT,time TEXT,content TEXT,url TEXT,ifread SMALLINT NOT NULL DEFAULT 0,newsType TEXT,userId TEXT)";
     sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
-    sqlCreateTable=@"ALTER TABLE News ADD newsType TEXT NULL";
-    sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
-    sqlCreateTable=@"ALTER TABLE News ADD userId TEXT NULL";
-    sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
- 
-    sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
+    // sqlCreateTable=@"ALTER TABLE News ADD newsType TEXT NULL";
+    // sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
+    // sqlCreateTable=@"ALTER TABLE News ADD userId TEXT NULL";
+    // sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
     
     sqlCreateTable = @"CREATE TABLE IF NOT EXISTS AlbumMsg (ID INTEGER PRIMARY KEY AUTOINCREMENT, fromId TEXT NOT NULL,time TEXT,msg TEXT,fromHeadUrl TEXT,fromName TEXT,toId TEXT,toName TEXT,type TEXT,ifRead SMALLINT NOT NULL DEFAULT 0,imageJson TEXT)";
     sqlite3_exec(db, [sqlCreateTable UTF8String], NULL, NULL, &err);
- 
+    
+    
     
 }
 -(void)insertNewAubumMsg:(NSDictionary *)dict
@@ -145,7 +144,7 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
 {
     NSMutableArray *resultArray=[NSMutableArray array];
     NSString *sqlQuery = [NSString stringWithFormat:
-                          @"select * FROM AlbumMsg where ifRead='%d' and toId='%@' order by ID desc",ifRead,toId];
+                          @"select * FROM AlbumMsg where ifRead='%ld' and toId='%@' order by ID desc",(long)ifRead,toId];
     sqlite3_stmt * statement;
     if (sqlite3_prepare_v2(db, [sqlQuery UTF8String], -1, &statement, nil) == SQLITE_OK) {
         while (sqlite3_step(statement) == SQLITE_ROW) {
@@ -196,7 +195,7 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
     for(int i=0;i<msgList.count;i++)
     {
         AlbumMsg *item=[msgList objectAtIndex:i];
-        NSString *sql=[NSString stringWithFormat:@"update AlbumMsg set ifRead=1 where id='%d'",item.rowid];
+        NSString *sql=[NSString stringWithFormat:@"update AlbumMsg set ifRead=1 where id='%ld'",(long)item.rowid];
         [self execSql:sql];
     }
 }
@@ -212,12 +211,15 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
     NSString *respondUserImage=[dict objectForKey:@"FROM_USERID_IMAGE"];
     NSNumber *ifRead=[dict objectForKey:@"ifRead"];
     NSString *msgId=[dict objectForKey:@"MSG_ID"];
+    NSString *linkUrl=[dict objectForKey:@"LINKURL"];
+    if(linkUrl==nil)
+        linkUrl=@"";
     NSString *imageUrl=@"";
     if(![msgType isEqualToString:@"txt"])
         imageUrl=msgContent;
     NSString *sql = [NSString stringWithFormat:
-                      @"INSERT INTO 'Messages' ('hostUser', 'respondUser', 'msgContent','msgType','sendTime','ifread','hostName','respondName','respondUserImage','ifReceive','imageUrl') VALUES ('%@', '%@', '%@','%@', '%@', '%d', '%@', '%@','%@','%d','%@')",
-                      hostUser, respondUser, msgContent, msgType, sendTime, ifRead.intValue,hostName,respondName,respondUserImage,1,imageUrl];
+                      @"INSERT INTO 'Messages' ('hostUser', 'respondUser', 'msgContent','msgType','sendTime','ifread','hostName','respondName','respondUserImage','ifReceive','imageUrl','linkUrl') VALUES ('%@', '%@', '%@','%@', '%@', '%d', '%@', '%@','%@','%d','%@','%@')",
+                      hostUser, respondUser, msgContent, msgType, sendTime, ifRead.intValue,hostName,respondName,respondUserImage,1,imageUrl,linkUrl];
     
     [self execSql:sql];
     
@@ -254,11 +256,32 @@ extern NSMutableDictionary *teacherInfoDic;//老师数据
     NSString *url=[dict objectForKey:@"最下边一行URL"];
     NSString *userId=[dict objectForKey:@"用户唯一码"];
     
-    NSString *sql = [NSString stringWithFormat:
-                     @"INSERT INTO 'News' ('newsid', 'title', 'image','time','content','url','newsType','userId','ifread') VALUES ('%d', '%@', '%@','%@', '%@', '%@','%@','%@','%@')",
-                     newsid.intValue, title, image, time, content, url,newsType,userId,ifread];
-    
-    [self execSql:sql];
+    NSString *sqlQuery = [NSString stringWithFormat:@"SELECT ID FROM News where newsid=%d and userId='%@' order by ID limit 1",newsid.intValue,userId];
+    sqlite3_stmt * statement;
+    int rowid=0;
+    if (sqlite3_prepare_v2(db, [sqlQuery UTF8String], -1, &statement, nil) == SQLITE_OK) {
+        if(sqlite3_step(statement) == SQLITE_ROW) {
+            rowid=sqlite3_column_int(statement, 0);
+            if(rowid>0)
+            {
+                NSString *sql = [NSString stringWithFormat:
+                                 @"delete from 'News' where ID<>%d and newsid=%d and userId='%@'",
+                                 rowid,newsid.intValue,userId];
+                [self execSql:sql];
+                sql=[NSString stringWithFormat:@"update News set title='%@',image='%@',time='%@',content='%@',url='%@',ifread='%@' where ID=%d",title,image,time,content,url,ifread,rowid];
+                [self execSql:sql];
+            }
+            
+        }
+    }
+    if(rowid==0)
+    {
+        NSString *sql = [NSString stringWithFormat:
+                         @"INSERT INTO 'News' ('newsid', 'title', 'image','time','content','url','newsType','userId','ifread') VALUES ('%d', '%@', '%@','%@', '%@', '%@','%@','%@','%@')",
+                         newsid.intValue, title, image, time, content, url,newsType,userId,ifread];
+        [self execSql:sql];
+    }
+   
     
 }
 -(int)getMaxNewsId:(NSString *)newsType userId:(NSString *)userId
@@ -429,7 +452,10 @@ NSInteger customSortNews(News *obj1, News *obj2,void* context){
             NSString *nsimageUrl=@"";
             if(imageUrl)
                 nsimageUrl = [[NSString alloc]initWithUTF8String:imageUrl];
-            
+            char *linkUrl = (char*)sqlite3_column_text(statement, 13);
+            NSString *nslinkUrl=@"";
+            if(linkUrl)
+                nslinkUrl = [[NSString alloc]initWithUTF8String:linkUrl];
             Message *msg=[[Message alloc]init];
             msg.rowid=curId;
             msg.respondUser=nsrespondUser;
@@ -441,7 +467,7 @@ NSInteger customSortNews(News *obj1, News *obj2,void* context){
             msg.ifsuc=ifsuc;
             msg.imageUrl=nsimageUrl;
             msg.ifRead=ifread;
-            
+            msg.linkUrl=nslinkUrl;
             if([msg.msgType isEqualToString:@"img"])
             {
                 msg.img=[UIImage imageWithContentsOfFile:msg.text];
@@ -562,7 +588,7 @@ NSInteger customSort(Message *obj1, Message *obj2,void* context){
                 [dict setObject:[NSNumber numberWithInt:ifReceive] forKey:@"ifReceive"];
                 
                 
-                sqlQuery = [NSString stringWithFormat:@"SELECT count(*) FROM Messages where ifread=0 and ifreceive=1 and respondUser='%@'",nsrespondUser];
+                sqlQuery = [NSString stringWithFormat:@"SELECT count(*) FROM Messages where ifread=0 and ifreceive=1 and hostUser='%@' and respondUser='%@'",hostUser,nsrespondUser];
                 sqlite3_stmt * statement1;
                 if (sqlite3_prepare_v2(db, [sqlQuery UTF8String], -1, &statement1, nil) == SQLITE_OK) {
                     if (sqlite3_step(statement1) == SQLITE_ROW) {

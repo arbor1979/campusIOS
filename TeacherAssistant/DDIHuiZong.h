@@ -23,6 +23,10 @@
 #import "SidebarViewController.h"
 #import "XHDrawerController.h"
 #import "DDIHelpView.h"
+#import "DDILiuYan.h"
+#import <AVFoundation/AVFoundation.h>
+#import "QRCodeController.h"
+
 @interface DDIHuiZong : UICollectionViewController
 {
     NSMutableArray *requestArray;
@@ -30,6 +34,7 @@
     NSString *savepath;
     int allUnread;
     NSDictionary *unreadDic;
-    BOOL needCount;
+    NSMutableArray *moduleGroup;
+    NSMutableDictionary *moduleList;
 }
 @end

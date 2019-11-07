@@ -36,6 +36,7 @@ extern NSString *kUserIndentify;
     unitFlags=NSCalendarUnitWeekOfYear|NSCalendarUnitWeekday;
     buttonArray=[NSMutableArray array];
     indexStrArray=[NSMutableArray array];
+    banjiname=@"";
     //设置背景图
 //    self.bgImage.image=[UIImage imageNamed:@"ScheduleBg"];
     [self changeScheduleBg];
@@ -58,6 +59,7 @@ extern NSString *kUserIndentify;
     
     //获取课表
     scheduleArray=[userInfoDic objectForKey:@"教师上课记录"];
+    [self reSetColorMap];
     NSString *curWeek=[userInfoDic objectForKey:@"当前周次"];
     _WeekNo=[NSString stringWithFormat:@"第%@周(本周)",curWeek];
     
@@ -141,7 +143,7 @@ extern NSString *kUserIndentify;
     UINavigationItem *navItem = [[UINavigationItem alloc] initWithTitle:@""];
     UIBarButtonItem *spacer=[[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
     spacer.width=20;
-    UIBarButtonItem *leftButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStyleBordered target:self action:@selector(docancel)];
+    UIBarButtonItem *leftButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStyleDone target:self action:@selector(docancel)];
     navItem.leftBarButtonItems = [NSArray arrayWithObjects:spacer,leftButton,nil];
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"确定" style:UIBarButtonItemStyleDone target:self action:@selector(done)];
 
@@ -312,7 +314,7 @@ extern NSString *kUserIndentify;
 {
     NSString *weekbegin=[userDefaultes valueForKey:@"weekBegin"];
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@appserver.php?action=initinfo&zip=1&WEEK=%@",kServiceURL,selWeek]];
-	NSString *postStr = [NSString stringWithFormat:@"{\"用户较验码\":\"%@\",\"周日为第一天\":\"%@\"}",kUserIndentify,weekbegin];
+    NSString *postStr = [NSString stringWithFormat:@"{\"用户较验码\":\"%@\",\"周日为第一天\":\"%@\",\"banjiname\":\"%@\"}",kUserIndentify,weekbegin,banjiname];
     postStr =[GTMBase64 base64StringBystring:postStr];
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
 
@@ -368,6 +370,7 @@ extern NSString *kUserIndentify;
             [subview removeFromSuperview];
     }
     scheduleArray=[userInfoDic objectForKey:@"教师上课记录"];
+    [self reSetColorMap];
     [buttonArray removeAllObjects];
     [indexStrArray removeAllObjects];
     for (int i=0;i<[scheduleArray count];i++)
@@ -474,7 +477,7 @@ numberOfRowsInComponent:(NSInteger)component {
             NSDate *dt=[[NSDate alloc]initWithTimeIntervalSinceNow:24*3600*i];
             NSString *daystr=[CommonFunc stringFromDateShort:dt];
             NSArray *classArray=[allWeekDayClass objectForKey:daystr];
-            NSString *body=[NSString stringWithFormat:@"%@没有课哦",dayName];
+            NSString *body;
             if(classArray.count>0)
             {
                 if(kUserType==1)
@@ -485,20 +488,21 @@ numberOfRowsInComponent:(NSInteger)component {
                     body=[body stringByAppendingString:@"\n"];
                     body=[body stringByAppendingString:[classArray objectAtIndex:j]];
                 }
+                NSString *tipDateStr=[NSString stringWithFormat:@"%@ %@:%@:00",daystr,hour,minute];
+                NSDate *tipDate=[CommonFunc dateFromString:tipDateStr];
+                
+                if([day isEqualToString:@"前一天"])
+                {
+                    tipDate=[NSDate dateWithTimeInterval:-24*60*60 sinceDate:tipDate];
+                }
+                UILocalNotification *localNoti = [[UILocalNotification alloc]init];
+                localNoti.alertBody = body;
+                localNoti.fireDate=tipDate;
+                localNoti.soundName=UILocalNotificationDefaultSoundName;
+                localNoti.repeatInterval=0;
+                [[UIApplication sharedApplication] scheduleLocalNotification:localNoti];
             }
-            NSString *tipDateStr=[NSString stringWithFormat:@"%@ %@:%@:00",daystr,hour,minute];
-            NSDate *tipDate=[CommonFunc dateFromString:tipDateStr];
-          
-            if([day isEqualToString:@"前一天"])
-            {
-                tipDate=[NSDate dateWithTimeInterval:-24*60*60 sinceDate:tipDate];
-            }
-            UILocalNotification *localNoti = [[UILocalNotification alloc]init];
-            localNoti.alertBody = body;
-            localNoti.fireDate=tipDate;
-            localNoti.soundName=UILocalNotificationDefaultSoundName;
-            localNoti.repeatInterval=0;
-            [[UIApplication sharedApplication] scheduleLocalNotification:localNoti];
+            
                 
         }
         
@@ -563,13 +567,45 @@ numberOfRowsInComponent:(NSInteger)component {
 
 -(void)viewDidAppear:(BOOL)animated
 {
+    NSString *banjistr=[userInfoDic objectForKey:@"管辖班级"];
+    if(kUserType==1 && banjistr!=nil && banjistr.length>0)
+    {
+        UIButton *backBtn = [[UIButton alloc] initWithFrame:CGRectZero];
+        [backBtn setTitle:@"" forState:UIControlStateNormal];
+        backBtn.imageEdgeInsets=UIEdgeInsetsMake(5, 5, 5, 5);
+        [backBtn setImage:[UIImage imageNamed:@"dropdown"] forState:UIControlStateNormal];
+        //[backBtn setBackgroundImage:[UIImage imageNamed:@"dropdown"] forState:UIControlStateNormal];
+        [backBtn addTarget:self action:@selector(dropdownmenu:) forControlEvents:UIControlEventTouchUpInside];
+        UIBarButtonItem *backBarBtn = [[UIBarButtonItem alloc] initWithCustomView:backBtn];
+        self.parentViewController.navigationItem.rightBarButtonItem=backBarBtn;
+    }
     self.parentViewController.navigationItem.title=nil;
     self.parentViewController.navigationItem.titleView=myStackView;
     [super viewDidAppear:animated];
     
 }
+-(void)dropdownmenu:(id)sender
+{
+    NSString *banjistr=[userInfoDic objectForKey:@"管辖班级"];
+    banjistr=[banjistr stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@","]];
+    banjistr=[NSString stringWithFormat:@"我的课表,%@",banjistr];
+    NSArray *menutitle=[banjistr componentsSeparatedByString:@","];
+   [YBPopupMenu showRelyOnView:sender titles:menutitle icons:nil menuWidth:170 delegate:self];
+}
+- (void)ybPopupMenu:(YBPopupMenu *)ybPopupMenu didSelectedAtIndex:(NSInteger)index
+{
+    //推荐回调
+    NSLog(@"点击了 %@ 选项",ybPopupMenu.titles[index]);
+    if(index>0)
+        banjiname=ybPopupMenu.titles[index];
+    else
+        banjiname=@"";
+    [self reloadSchedule];
+}
+
 -(void)viewDidDisappear:(BOOL)animated
 {
+    self.parentViewController.navigationItem.rightBarButtonItem=nil;
     self.parentViewController.navigationItem.titleView=Nil;
     [super viewDidDisappear:animated];
 }
@@ -589,23 +625,16 @@ numberOfRowsInComponent:(NSInteger)component {
     NSString *className=[classInfo objectForKey:@"课程"];
     NSString *classRoom=[classInfo objectForKey:@"教室"];
     NSString *banJi;
-    if(kUserType==1)
+    if(kUserType==1 && banjiname.length==0)
         banJi=[classInfo objectForKey:@"班级"];
     else
-        banJi=[classInfo objectForKey:@"教师姓名"];
+        banJi=[classInfo objectForKey:@"课程"];
     NSArray *sectionArray=[sectionStr componentsSeparatedByString:@"-"];
     CGFloat x=iweekday*60+1;
-    CGFloat y=([[sectionArray objectAtIndex:0] intValue]-1)*45;
+    CGFloat y=([[sectionArray objectAtIndex:0] intValue]-1)*45+1;
     CGFloat height=[[sectionArray objectAtIndex:[sectionArray count]-1] intValue]*45-y;
    
-    
-    int m=0;
-    for(int i=0;i<[banJi length];i++)
-    {
-        char c=[banJi characterAtIndex:i];
-        m=m+(Byte)c;
-    }
-    UIColor *randColor=[colorArray objectAtIndex:m%colorArray.count];
+    UIColor *randColor=[colorMapDic objectForKey:banJi];
     /*
     UIEdgeInsets insets=UIEdgeInsetsMake(5, 5, 5, 5);
     DDIInsetsLabel *classText = [[DDIInsetsLabel alloc] initWithFrame: CGRectMake(x, y, 60-1, height) andInsets:insets];
@@ -653,8 +682,8 @@ numberOfRowsInComponent:(NSInteger)component {
         //innerBtn.titleLabel.text=[NSString stringWithFormat:@"%ld",(long)index];
         [innerBtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
         [innerBtn.titleLabel setFont:[UIFont systemFontOfSize:10.0]];
-        innerBtn.titleLabel.lineBreakMode=NSLineBreakByTruncatingTail;
-        innerBtn.titleLabel.numberOfLines=floor(height/45)*3;
+        innerBtn.titleLabel.lineBreakMode=NSLineBreakByCharWrapping;
+        innerBtn.titleLabel.numberOfLines=floor((height+1)/45)*3;
         
         innerBtn.alpha=1;
         [innerBtn addTarget:self action:@selector(openAttendView:) forControlEvents:UIControlEventTouchUpInside];
@@ -693,7 +722,19 @@ numberOfRowsInComponent:(NSInteger)component {
     }
     else
     {
-        [self performSegueWithIdentifier:@"classAttend" sender:[NSNumber numberWithInt:indexStr.intValue]];
+        if(banjiname.length>0)
+        {
+            DDICourseInfo *dest1=[self.storyboard instantiateViewControllerWithIdentifier:@"courseinfo"];
+            NSDictionary *classInfo=[scheduleArray objectAtIndex:indexStr.intValue];
+            dest1.className=[classInfo objectForKey:@"课程"];
+            dest1.teacherUserName=[classInfo objectForKey:@"教师用户名"];
+            dest1.classNo=[classInfo objectForKey:@"编号"];
+            dest1.classIndex=[NSNumber numberWithInt:indexStr.intValue];
+            [self.navigationController pushViewController:dest1 animated:YES];
+            
+        }
+        else
+            [self performSegueWithIdentifier:@"classAttend" sender:[NSNumber numberWithInt:indexStr.intValue]];
     }
 }
 // 拖拽手势
@@ -851,6 +892,32 @@ numberOfRowsInComponent:(NSInteger)component {
     {
         NSString *indexStr=[indexArray objectAtIndex:buttonIndex-1];
         [self performSegueWithIdentifier:@"classAttend" sender:[NSNumber numberWithInt:indexStr.intValue]];
+    }
+}
+-(void)reSetColorMap
+{
+    if(colorMapDic==nil)
+        colorMapDic=[NSMutableDictionary dictionary];
+    [colorMapDic removeAllObjects];
+    int i=0;
+    if(scheduleArray!=nil)
+    {
+        for(NSDictionary *item in scheduleArray)
+        {
+            NSString *key;
+            if(kUserType==1 && banjiname.length==0)
+               key=[item objectForKey:@"班级"];
+            else
+               key=[item objectForKey:@"课程"];
+            if([colorMapDic objectForKey:key]==nil)
+            {
+                if(i==colorArray.count)
+                    i=0;
+                UIColor *color= [colorArray objectAtIndex:i];
+                [colorMapDic setObject:color forKey:key];
+                i++;
+            }
+        }
     }
 }
 @end

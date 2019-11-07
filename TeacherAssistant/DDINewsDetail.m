@@ -31,7 +31,7 @@ extern DDIDataModel *datam;
 	scrollView=[[UIScrollView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width,height)];
     [self.view addSubview:scrollView];
     [self getNewsDetail:_news.newsid];
-    if(_news.ifread==0)
+    if(_news.ifread==0 && _news.rowid>0)
         [datam clearUnReadByNewsId:_news.rowid];
     
     
@@ -47,7 +47,11 @@ extern DDIDataModel *datam;
 }
 - (void)getNewsDetail:(int)newsid
 {
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,_news.url];
+    NSString *urlStr;
+    if([[_news.url lowercaseString] hasPrefix:@"http"])
+        urlStr=_news.url;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,_news.url];
     NSURL *url = [NSURL URLWithString:urlStr];
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
     NSError *error;
@@ -77,7 +81,7 @@ extern DDIDataModel *datam;
         }
         NSData *datas = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:datas encoding:NSUTF8StringEncoding];
-        datas   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        datas   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dic=[NSJSONSerialization JSONObjectWithData:datas options:NSJSONReadingAllowFragments error:nil];;
         if(dic)
         {
@@ -138,15 +142,16 @@ extern DDIDataModel *datam;
 {
     UILabel *title=[[UILabel alloc]initWithFrame:CGRectMake(18, 18, scrollView.bounds.size.width-36, 25)];
     title.font=[UIFont boldSystemFontOfSize:18];
-    //title.textAlignment=NSTextAlignmentCenter;
+    title.textAlignment=NSTextAlignmentCenter;
     [title setNumberOfLines:0];
     title.text=_news.title;
     [title sizeToFit];
+    title.frame=CGRectMake(18, 18, scrollView.bounds.size.width-36, title.frame.size.height);
     [scrollView addSubview:title];
     float y=title.frame.size.height+title.frame.origin.y+10;
     UILabel *time=[[UILabel alloc]initWithFrame:CGRectMake(18, y, scrollView.bounds.size.width-36, 18)];
     time.font=[UIFont systemFontOfSize:15];
-    time.textAlignment=NSTextAlignmentCenter;
+    time.textAlignment=NSTextAlignmentRight;
     time.text=_news.time;
     
     [scrollView addSubview:time];

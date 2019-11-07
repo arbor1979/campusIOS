@@ -7,6 +7,7 @@
 //
 
 #import "DDIChatView.h"
+#import "DDIHelpView.h"
 extern NSMutableDictionary *teacherInfoDic;//老师数据
 extern NSMutableDictionary *userInfoDic;//课表数据
 extern NSString *talkingRespond;
@@ -528,12 +529,25 @@ extern int kSchoolId;
     Message* message = [datam.messages objectAtIndex:indexPath.row];
     if([message.msgType isEqualToString:@"txt"])
     {
-        return message.text;
+        if(message.linkUrl!=nil && message.linkUrl.length>0)
+            return [NSString stringWithFormat:@"%@\n[点击查看]", message.text];
+        else
+            return message.text;
+    }
+    else
+        return nil;
+}
+- (NSString *)linkUrlForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    Message* message = [datam.messages objectAtIndex:indexPath.row];
+    if([message.msgType isEqualToString:@"txt"])
+    {
+        return message.linkUrl;
     }
     else
         return nil;
     
-  
+    
 }
 -(void)updateMsgState
 {
@@ -775,5 +789,122 @@ extern int kSchoolId;
     Message* message = [datam.messages objectAtIndex:indexPath.row];
     return message.ifsuc;
     
+}
+-(void)cellOnTap:(JSBubbleView *)view
+{
+    if(view.mediaType==JSBubbleMediaTypeImage)
+    {
+        NSData *imageData=UIImageJPEGRepresentation(view.data,0.3);
+        NSString *tmpDir = NSTemporaryDirectory();
+        NSNumber *timeStamp=[[NSNumber alloc] initWithLong:[[NSDate new] timeIntervalSince1970]];
+        NSString *fileName=[NSString stringWithFormat:@"%@%@.png",tmpDir,timeStamp];
+        [imageData writeToFile:fileName atomically:YES];
+        
+        NSURL *url = [NSURL fileURLWithPath:fileName];
+        documentInteractionController = [UIDocumentInteractionController                                                      interactionControllerWithURL:url];
+        [documentInteractionController setDelegate:self];
+        [documentInteractionController presentPreviewAnimated:YES];
+    }
+    else if(view.mediaType==JSBubbleMediaTypeText)
+    {
+        if(view.linkUrl!=nil && view.linkUrl.length>0)
+        {
+             NSString *base64Str=[GTMBase64 base64FromSafeBase64ForURL:view.linkUrl];
+             NSString *jumpurl= [GTMBase64 stringByBase64String:base64Str];
+             if(jumpurl!=nil && jumpurl.length>0)
+             {
+                 NSString *template=[CommonFunc findUrlQueryString:jumpurl :@"template"];
+                 NSString *templategrade=[CommonFunc findUrlQueryString:jumpurl :@"templategrade"];
+                 NSString *targettitle=[CommonFunc findUrlQueryString:jumpurl :@"targettitle"];
+                 if(template==nil || template.length==0)
+                     template=@"浏览器";
+                 if([jumpurl containsString:@"?"])
+                     jumpurl=[jumpurl stringByAppendingString:@"&"];
+                 else
+                     jumpurl=[jumpurl stringByAppendingString:@"?"];
+                 jumpurl = [jumpurl stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+                 
+                 if([template isEqualToString:@"浏览器"])
+                 {
+                     DDIHelpView *controller=[self.storyboard instantiateViewControllerWithIdentifier:@"HelpView"];
+                     controller.navigationItem.title=targettitle;
+                     jumpurl=[NSString stringWithFormat:@"%@jiaoyanma=%@",jumpurl,kUserIndentify];
+                     controller.urlStr=jumpurl;
+                     [self.navigationController pushViewController:controller animated:YES];
+                 }
+                 else if([template isEqualToString:@"公告通知"])
+                 {
+                     if([templategrade isEqualToString:@"main"])
+                     {
+                         DDINewsTitle *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"newsMain"];
+                         controller.newsType=targettitle;
+                         controller.interfaceUrl=jumpurl;
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                     else
+                     {
+                         DDINewsDetail *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"newsDetail"];
+                         News *new=[[News alloc]init];
+                         new.url=jumpurl;
+                         controller.news=new;
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                }
+                else if([template isEqualToString:@"成绩"])
+                {
+                     if([templategrade isEqualToString:@"main"])
+                     {
+                         DDIChengjiTitle *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiMain"];
+                         controller.interfaceUrl=jumpurl;
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                     else
+                     {
+                         DDIChengjiDetail *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiDetail"];
+                         controller.interfaceUrl=jumpurl;
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                }
+                else if([template isEqualToString:@"调查问卷"])
+                {
+                     if([templategrade isEqualToString:@"main"])
+                     {
+                         DDIWenJuanTitle *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanMain"];
+                         controller.interfaceUrl=jumpurl;
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                     else
+                     {
+                         DDIWenJuanDetail *controller;
+                         controller=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanDetail"];
+                         controller.interfaceUrl=jumpurl;
+                         controller.title=targettitle;
+                         controller.examStatus=@"进行中";
+                         controller.key=-1;
+                         controller.parentTitleArray=nil;
+                         controller.autoClose=@"是";
+                         [self.navigationController pushViewController:controller animated:YES];
+                     }
+                }
+             }
+        }
+    }
+}
+- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)interactionController
+{
+    return self;
+}
+-(UIView *)documentInteractionControllerViewForPreview:(UIDocumentInteractionController *)controller{
+    
+    return self.view;
+}
+- (CGRect)documentInteractionControllerRectForPreview:(UIDocumentInteractionController*)controller
+{
+    return self.view.frame;
 }
 @end

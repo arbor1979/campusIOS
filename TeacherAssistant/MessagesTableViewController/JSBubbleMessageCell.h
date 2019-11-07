@@ -35,13 +35,14 @@
 
 #import <UIKit/UIKit.h>
 #import "JSBubbleView.h"
-
 typedef enum {
     JSAvatarStyleCircle = 0,
     JSAvatarStyleSquare,
     JSAvatarStyleNone
 } JSAvatarStyle;
-
+@protocol MessageCellDelegate <NSObject>
+-(void)cellOnTap:(JSBubbleView *)view;
+@end
 
 @interface JSBubbleMessageCell : UITableViewCell
 {
@@ -61,12 +62,13 @@ typedef enum {
 
 #pragma mark - Message cell
 - (void)setMessage:(NSString *)msg;
+- (void)setLinkUrl:(NSString *)linkUrl;
 - (void)setMedia:(id)data;
 - (void)setTimestamp:(NSDate *)date;
 - (void)setSendDest:(NSArray *)dest;
 - (void)setAvatarImage:(UIImage *)image;
 
-
+@property (weak, nonatomic) id<MessageCellDelegate> delegate;
 + (CGFloat)neededHeightForText:(NSString *)bubbleViewText
                      timestamp:(BOOL)hasTimestamp
                         avatar:(BOOL)hasAvatar;

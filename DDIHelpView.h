@@ -12,7 +12,26 @@
 #import "CommonFunc.h"
 #import "NSString+URLEncoding.h"
 #import <mediaPlayer/MediaPlayer.h>
-@interface DDIHelpView : UIViewController<UIWebViewDelegate,UIDocumentInteractionControllerDelegate,UIAlertViewDelegate>
+#import <JavaScriptCore/JavaScriptCore.h>
+#import "DDIAppDelegate.h"
+#import <CoreLocation/CoreLocation.h>
+#import <AVFoundation/AVCaptureDevice.h>
+#import <MobileCoreServices/UTCoreTypes.h>
+#import "UIImage+Scale.h"
+#import "DDIMyInforView.h"
+#import "DDIChengjiTitle.h"
+#import "DDIChengjiDetail.h"
+#import "DDINewsTitle.h"
+#import "DDINewsDetail.h"
+#import "DDIKaoQinTitle.h"
+#import "DDIKaoQinDetail.h"
+#import "DDIWenJuanTitle.h"
+#import "DDIWenJuanDetail.h"
+#import "DDILiuYan.h"
+#import "News.h"
+#import "QRCodeController.h"
+
+@interface DDIHelpView : UIViewController<UIWebViewDelegate,UIDocumentInteractionControllerDelegate,UIAlertViewDelegate,UIImagePickerControllerDelegate>
 {
     UIView *view;
     NSUserDefaults *userDefaultes;
@@ -25,6 +44,9 @@
     UIBarButtonItem *btnStopDownload;
     NSArray *mediaFormat;
     MPMoviePlayerViewController *playerVc;
+    JSContext *jscontext;
+    UIBarButtonItem *newbackItem;
+    UIBarButtonItem *closeItem;
 }
 @property (weak, nonatomic) IBOutlet UIWebView *webView;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *indicator;

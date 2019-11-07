@@ -83,7 +83,7 @@ extern NSMutableDictionary *userInfoDic;
     UINavigationBar *navBar = [[UINavigationBar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 40)];
     //[navBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
     UINavigationItem *navItem = [[UINavigationItem alloc] initWithTitle:@""];
-    UIBarButtonItem *leftButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStyleBordered target:self action:@selector(docancel)];
+    UIBarButtonItem *leftButton = [[UIBarButtonItem alloc] initWithTitle:@"取消" style:UIBarButtonItemStyleDone target:self action:@selector(docancel)];
     navItem.leftBarButtonItem = leftButton;
     UIBarButtonItem *rightButton = [[UIBarButtonItem alloc] initWithTitle:@"确定" style:UIBarButtonItemStyleDone target:self action:@selector(done)];
     navItem.rightBarButtonItem = rightButton;
@@ -148,7 +148,7 @@ extern NSMutableDictionary *userInfoDic;
             [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         titleArray= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(!titleArray)
             titleArray=[NSDictionary dictionary];
@@ -347,7 +347,11 @@ extern NSMutableDictionary *userInfoDic;
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     UIButton *btn=(UIButton *)sender;
-    NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    NSString *urlStr;
+    if([[self.interfaceUrl lowercaseString] hasPrefix:@"http"])
+        urlStr=self.interfaceUrl;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
     urlStr=[urlStr stringByAppendingString:btn.titleLabel.text];
     UILabel *itemName=[self.lblItemName objectAtIndex:btn.tag-100];
     DDIKaoQinDetail *detial=segue.destinationViewController;

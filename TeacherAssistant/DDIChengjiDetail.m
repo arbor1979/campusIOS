@@ -28,6 +28,12 @@ extern NSMutableDictionary *teacherInfoDic;
     self.tableView.backgroundColor=[UIColor colorWithRed:228/255.0 green:244/255.0 blue:234/255.0 alpha:1];
     //savepath=[CommonFunc createPath:@"/utils/"];
     savepath=[CommonFunc createPath:@"/classNotes/"];
+    NSString *urlStr;
+    if([[self.interfaceUrl lowercaseString] hasPrefix:@"http"])
+        urlStr=self.interfaceUrl;
+    else
+        urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,self.interfaceUrl];
+    self.interfaceUrl=urlStr;
     [self loadDetailData];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -39,7 +45,6 @@ extern NSMutableDictionary *teacherInfoDic;
 
 -(void)loadDetailData
 {
-    
     NSURL *url = [NSURL URLWithString:self.interfaceUrl];
     ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
     NSError *error;
@@ -68,7 +73,7 @@ extern NSMutableDictionary *teacherInfoDic;
             [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict)
         {
@@ -89,11 +94,11 @@ extern NSMutableDictionary *teacherInfoDic;
                 UIBarButtonItem *rightBtn;
                 if([[dict objectForKey:@"右上按钮Submit"] isEqualToString:@"是"])
                 {
-                    rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleBordered target:self action:@selector(addSubmit)];
+                    rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleDone target:self action:@selector(addSubmit)];
                 }
                 else
                 {
-                    rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleBordered target:self action:@selector(addNew)];
+                    rightBtn= [[UIBarButtonItem alloc] initWithTitle:btName style:UIBarButtonItemStyleDone target:self action:@selector(addNew)];
                 }
                 self.navigationItem.rightBarButtonItem=rightBtn;
             }
@@ -121,7 +126,7 @@ extern NSMutableDictionary *teacherInfoDic;
            [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         if(dict && [[dict objectForKey:@"结果"] isEqualToString:@"成功"])
         {
@@ -180,7 +185,7 @@ extern NSMutableDictionary *teacherInfoDic;
             [alertTip removeFromSuperview];
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSDictionary *dict= [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
         NSString *result=[dict objectForKey:@"结果"];
         if(!result) result=[dict objectForKey:@"状态"];
@@ -294,7 +299,7 @@ extern NSMutableDictionary *teacherInfoDic;
     if(!cell)
     {
         cell=[[UITableViewCell alloc]initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-        int width=(cell.frame.size.width-15)*leftWidth.intValue/100;
+        int width=(self.view.frame.size.width-15)*leftWidth.intValue/100;
         leftLbl=[[UILabel alloc] initWithFrame:CGRectMake(5, 3, width, cell.frame.size.height-6)];
         rightLbl=[[UILabel alloc]initWithFrame:CGRectMake(width+10, 3, self.view.frame.size.width-width-15,cell.frame.size.height-6)];
         
@@ -369,7 +374,22 @@ extern NSMutableDictionary *teacherInfoDic;
         [bottomBtn setHidden:YES];
         leftLbl.text=[item objectForKey:@"左边"];
         rightLbl.text=rightText;
-        
+        if([CommonFunc isValidateMobile:rightText])
+        {
+            rightLbl.textColor=rightLbl.tintColor;
+            rightLbl.userInteractionEnabled = YES;
+            if(rightLbl.gestureRecognizers==nil || rightLbl.gestureRecognizers.count==0)
+            {
+                UITapGestureRecognizer *labelTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dealClickURL:)];
+                [rightLbl addGestureRecognizer:labelTap];
+            }
+        }
+        else
+        {
+            rightLbl.textColor=[UIColor blackColor];
+            rightLbl.userInteractionEnabled = NO;
+            
+        }
         CGSize size1 = [CommonFunc getSizeByText:leftLbl.text width:leftLbl.frame.size.width font:leftLbl.font];
         CGSize size2 = [CommonFunc getSizeByText:rightLbl.text width:rightLbl.frame.size.width font:rightLbl.font];
        [leftLbl setFrame:CGRectMake(leftLbl.frame.origin.x, leftLbl.frame.origin.y, leftLbl.frame.size.width, size1.height)];
@@ -422,6 +442,13 @@ extern NSMutableDictionary *teacherInfoDic;
         }
     }
     return cell;
+}
+-(void)dealClickURL:(UITapGestureRecognizer *)tap
+{
+    UILabel *label = (UILabel *)tap.view;
+    NSLog(@"text = %@",label.text);
+    NSMutableString * str=[[NSMutableString alloc] initWithFormat:@"telprompt:%@",label.text];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:str]];
 }
 -(void)drawImageFromArray:(int)top left:(int)left array:(NSArray *)photos parent:(UITableViewCell *)parentView
 {
@@ -606,8 +633,8 @@ extern NSMutableDictionary *teacherInfoDic;
                 DDIChengjiTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"chengjiMain"];
                 chengjiMain.title=self.title;
                 NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
-                NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
-                detailURL=[NSString stringWithFormat:@"%@%@",realname,detailURL];
+                //NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
+                detailURL=[NSString stringWithFormat:@"%@%@",[tmparray objectAtIndex:0],detailURL];
                 chengjiMain.interfaceUrl=detailURL;
                 [self.navigationController pushViewController:chengjiMain animated:YES];
             }
@@ -624,8 +651,8 @@ extern NSMutableDictionary *teacherInfoDic;
         else if([moban isEqualToString:@"调查问卷"])
         {
             NSArray *tmparray=[self.interfaceUrl componentsSeparatedByString:@"?"];
-            NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
-            detailURL=[NSString stringWithFormat:@"%@%@",realname,detailURL];
+            // NSString *realname=[CommonFunc getFileRealName:[tmparray objectAtIndex:0]];
+            detailURL=[NSString stringWithFormat:@"%@%@",[tmparray objectAtIndex:0],detailURL];
             if([mobanLevel isEqualToString:@"main"])
             {
                 DDIWenJuanTitle *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanMain"];
@@ -637,8 +664,8 @@ extern NSMutableDictionary *teacherInfoDic;
             {
                 DDIWenJuanDetail *chengjiMain=[self.storyboard instantiateViewControllerWithIdentifier:@"wenjuanDetail"];
                 chengjiMain.title=self.title;
-                NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,detailURL];
-                chengjiMain.interfaceUrl=urlStr;
+                //NSString *urlStr=[NSString stringWithFormat:@"%@InterfaceStudent/%@",kInitURL,detailURL];
+                chengjiMain.interfaceUrl=detailURL;
                 [self.navigationController pushViewController:chengjiMain animated:YES];
             }
         }
@@ -737,21 +764,17 @@ extern NSMutableDictionary *teacherInfoDic;
 {
     [btn setEnabled:false];
     [self performSelector:@selector(enableBottomBtn:) withObject:btn afterDelay:3.0f];
-    NSDictionary *dict=[detailArray objectAtIndex:btn.tag];
+    //NSDictionary *dict=[detailArray objectAtIndex:btn.tag];
+    /*
     if(dict!=nil)
     {
         NSString *rightText=[dict objectForKey:@"右边"];
         NSArray *orderInfoArray=[rightText componentsSeparatedByString:@"|||"];
-        /*============================================================================*/
-        /*=======================需要填写商户app申请的===================================*/
-        /*============================================================================*/
+     
         NSString *partner =[orderInfoArray objectAtIndex:4];
         NSString *seller = [orderInfoArray objectAtIndex:5];
         NSString *privateKey = [orderInfoArray objectAtIndex:6];
-        /*============================================================================*/
-        /*============================================================================*/
-        /*============================================================================*/
-        
+     
         //partner和seller获取失败,提示
         if ([partner length] == 0 ||
             [seller length] == 0 ||
@@ -766,9 +789,7 @@ extern NSMutableDictionary *teacherInfoDic;
             return;
         }
         
-        /*
-         *生成订单信息及签名
-         */
+     
         //将商品信息赋予AlixPayOrder的成员变量
         Order *order = [[Order alloc] init];
         order.partner = partner;
@@ -831,6 +852,7 @@ extern NSMutableDictionary *teacherInfoDic;
 
         }
     }
+     */
 }
 -(void)enableBottomBtn:(UIButton *)btn
 {

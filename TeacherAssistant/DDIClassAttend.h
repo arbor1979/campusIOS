@@ -23,7 +23,6 @@
 @property (strong,nonatomic) NSString *classNo;
 @property (strong,nonatomic) NSNumber *classIndex;
 @property (strong,nonatomic) NSMutableArray *requestArray;
-@property (strong,nonatomic) NSMutableData *datas;
 
 @property (strong,nonatomic) NSMutableArray *scheduleArray; //上课记录
 @property (strong,nonatomic) NSMutableDictionary *classInfoDic;//本节课信息

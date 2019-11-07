@@ -17,6 +17,7 @@
 #import "MDRadialProgressView.h"
 #import "MDRadialProgressTheme.h"
 #import "DDIPictureBrows.h"
+#import "QCheckBox.h"
 @interface DDIKeTangPingJia : UITableViewController<UITextViewDelegate,UIActionSheetDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate>
 {
     UIBarButtonItem *rightBtn;
@@ -36,6 +37,7 @@
     NSString *savePath;
     MDRadialProgressView *rpv;
     int curIndex;
+    bool bWanzixi;
 }
 @property (strong, nonatomic) IBOutletCollection(UIButton) NSArray *classBtns;
 @property (strong, nonatomic) IBOutletCollection(UIButton) NSArray *teacherBtns;
@@ -47,6 +49,8 @@
 @property (weak, nonatomic) IBOutlet UITextView *neiRongText;
 @property (weak, nonatomic) IBOutlet UITextView *zuoYeText;
 @property (weak, nonatomic) IBOutlet UITextView *summaryText;
+@property (weak, nonatomic) IBOutlet UIStackView *stackShouduan;
+@property (weak, nonatomic) IBOutlet UIStackView *stackPingtai;
 @property (strong,nonatomic) NSMutableArray *imageSel; //绿色选中图片
 @property (strong,nonatomic) NSMutableArray *imageDes; //灰色未选中图片
 @property (strong,nonatomic) NSArray *dengjiArray;

@@ -25,7 +25,7 @@ extern int kUserType;
 
     [super viewDidLoad];
     
-    rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"保存" style:UIBarButtonItemStyleBordered target:self action:@selector(saveAttend)];
+    rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"保存" style:UIBarButtonItemStyleDone target:self action:@selector(saveAttend)];
     
     //本班学生数组
     NSDictionary *tmpDic=[userInfoDic objectForKey:self.banjiName];
@@ -298,21 +298,49 @@ extern int kUserType;
         NSDictionary *tmpDic= [NSJSONSerialization JSONObjectWithData:datas options:NSJSONReadingAllowFragments error:nil];
         if(tmpDic!=nil)
         {
-            NSDictionary *zongjieDic=[tmpDic objectForKey:@"总结"];
-            if(zongjieDic!=nil && zongjieDic.count>0)
-            {
-                [_classInfoDic setObject:[zongjieDic objectForKey:@"课堂纪律"]forKey:@"课堂纪律"];
-                [_classInfoDic setObject:[zongjieDic objectForKey:@"教室卫生"]forKey:@"教室卫生"];
-                [_classInfoDic setObject:[zongjieDic objectForKey:@"授课内容"]forKey:@"授课内容"];
-                [_classInfoDic setObject:[zongjieDic objectForKey:@"作业布置"]forKey:@"作业布置"];
-                [_scheduleArray setObject:_classInfoDic atIndexedSubscript:self.classIndex.intValue];
-                [userInfoDic setObject:_scheduleArray forKey:@"教师上课记录"];
-            }
+            
             NSArray *tmparray=[tmpDic objectForKey:@"结果"];
             if(tmparray!=nil && tmparray.count>0)
             {
                 _stuKaoQinArray=[NSMutableArray arrayWithArray:tmparray];
                 [self.tableView reloadData];
+            }
+        }
+    }
+    else if([request.username isEqualToString:@"保存学生考勤"])
+    {
+        NSString* dataStr = [[NSString alloc] initWithData:datas encoding:NSUTF8StringEncoding];
+        datas = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
+        NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:datas options:NSJSONReadingAllowFragments error:nil];
+        NSString *result=[dict objectForKey:@"结果"];
+        NSRange range=[result rangeOfString:@"成功"];
+        NSLog(@"%@",result);
+        if(result!=nil && range.location!= NSNotFound)
+        {
+            result=@"已保存";
+            [rightBtn setTitle:@"保存"];
+        }
+        else
+        {
+            
+            NSLog(@"失败，原因：%@",dict);
+        }
+        OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:result];
+        [tipView show];
+        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
+        if(kUserType==1)
+        {
+            NSArray *scheduleArray=[userInfoDic objectForKey:@"教师上课记录"];
+            for(NSDictionary *item in scheduleArray)
+            {
+                if([[item objectForKey:@"编号"] isEqualToString:[_classInfoDic objectForKey:@"编号"]])
+                {
+                    NSString *neirong=[item objectForKey:@"授课内容"];
+                    if(neirong==nil || neirong.length==0)
+                    {
+                        self.tabBarController.selectedIndex=3;
+                    }
+                }
             }
         }
     }
@@ -463,7 +491,8 @@ extern int kUserType;
                 NSNumber *num=[tagArray objectAtIndex:i];
                 int tag=num.intValue;
                 UIButton *btnSel=(UIButton *)[cell viewWithTag:1000+tag];
-                [btnSel setImage:[_imageSel objectAtIndex:tag-1]  forState:UIControlStateNormal];
+                if(tag>0)
+                    [btnSel setImage:[_imageSel objectAtIndex:tag-1]  forState:UIControlStateNormal];
             }
             
         }
@@ -679,9 +708,6 @@ extern int kUserType;
         return;
     
     int iWeiChuqin=0;
-    
-    
-    
     NSURL *url = [NSURL URLWithString:[[kServiceURL stringByAppendingString:@"appserver.php?action=changekaoqininfo&APP=IOS"] URLEncodedString]];
     
     NSMutableDictionary *dic=[[NSMutableDictionary alloc] init];
@@ -710,10 +736,12 @@ extern int kUserType;
     [_scheduleArray setObject:_classInfoDic atIndexedSubscript:self.classIndex.intValue];
     [userInfoDic setObject:_scheduleArray forKey:@"教师上课记录"];
     
-    NSError *error;
+    //NSError *error;
     [dic setObject:_stuKaoQinArray forKey:@"缺勤情况登记JSONArray"];
     NSMutableArray *dicArray=[[NSMutableArray alloc] init ];
     [dicArray addObject:dic];
+    
+    /*
     NSData *postData=[NSJSONSerialization dataWithJSONObject:dicArray options:NSJSONWritingPrettyPrinted error:&error];
     NSString *postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
     
@@ -735,59 +763,20 @@ extern int kUserType;
     if (connection) {
         _datas = [NSMutableData new];
     }
+    */
+    ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:url];
+    NSError *error;
+    request.username=@"保存学生考勤";
+    NSData *postData=[NSJSONSerialization dataWithJSONObject:dicArray options:NSJSONWritingPrettyPrinted error:&error];
+    NSString *postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
+    postStr=[GTMBase64 base64StringBystring:postStr];
+    [request setPostValue:postStr forKey:@"DATA"];
+    [request setDelegate:self];
+    [request startAsynchronous];
+    [_requestArray addObject:request];
     [rightBtn setTitle:@"保存中"];
 }
 
-
-#pragma mark- NSURLConnection 回调方法
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-        [_datas appendData:data];
-}
--(void) connection:(NSURLConnection *)connection didFailWithError: (NSError *)error {
-    
-    NSLog(@"%@",[error localizedDescription]);
-}
-
-- (void) connectionDidFinishLoading: (NSURLConnection*) connection {
-    NSLog(@"请求完成...");
-    NSString* dataStr = [[NSString alloc] initWithData:_datas encoding:NSUTF8StringEncoding];
-    dataStr=[GTMBase64 stringByBase64String:dataStr];
-    NSData *data = [dataStr dataUsingEncoding: NSUTF8StringEncoding];
-    NSDictionary* dict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
-    
-    
-    NSString *result=[dict objectForKey:@"结果"];
-    NSRange range=[result rangeOfString:@"成功"];
-    NSLog(@"%@",result);
-    if(result!=nil && range.location!= NSNotFound)
-    {
-        result=@"已保存";
-        [rightBtn setTitle:@"保存"];
-    }
-    else
-    {
-        
-         NSLog(@"失败，原因：%@",dict);
-    }
-    OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:result];
-    [tipView show];
-    [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    if(kUserType==1)
-    {
-        NSArray *scheduleArray=[userInfoDic objectForKey:@"教师上课记录"];
-        for(NSDictionary *item in scheduleArray)
-        {
-            if([[item objectForKey:@"编号"] isEqualToString:[_classInfoDic objectForKey:@"编号"]])
-            {
-                NSString *neirong=[item objectForKey:@"授课内容"];
-                if(neirong==nil || neirong.length==0)
-                {
-                    self.tabBarController.selectedIndex=3;
-                }
-            }
-        }
-    }
-}
 
 -(void) prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {

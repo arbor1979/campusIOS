@@ -13,7 +13,7 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <CoreLocation/CoreLocation.h>
 #import <MapKit/MapKit.h>
-#import <AlipaySDK/AlipaySDK.h>
+//#import <AlipaySDK/AlipaySDK.h>
 @interface DDIAppDelegate : UIResponder <UIApplicationDelegate,CLLocationManagerDelegate>
 {
     BOOL ifUpdate;

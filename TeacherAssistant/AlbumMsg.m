@@ -7,7 +7,7 @@
 //
 
 #import "AlbumMsg.h"
-NSMutableDictionary *teacherInfoDic;//老师数据
+extern NSMutableDictionary *teacherInfoDic;//老师数据
 @implementation AlbumMsg
 
 -(id)initWithDic:(NSDictionary *)dict

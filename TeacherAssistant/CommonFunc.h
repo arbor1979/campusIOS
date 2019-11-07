@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "sys/utsname.h"
+
 #define __BASE64( text )        [CommonFunc base64StringFromText:text]
 #define __TEXT( base64 )        [CommonFunc textFromBase64String:base64]
 
@@ -60,4 +61,12 @@
 +(NSString *) getCacheImagePath:(NSString *)url;
 +(void) setCacheImagePath:(NSString *)url localPath:(NSString *)localPath;
 +(CGSize) getSizeByText:(NSString *)text width:(CGFloat)width font:(UIFont *)font;
++(UITableView *)getTableViewByCell:(UITableViewCell *)cell;
++(NSString *) getLocalLanguage;
++(BOOL) isValidateMobile:(NSString *)mobile;
++(BOOL)isPureInt:(NSString*)string;
++(BOOL)isPureFloat:(NSString*)string;
++(BOOL)isValidateEmail:(NSString *)email;
++(BOOL)isValidateTel:(NSString *)tel;
++(NSString *)findUrlQueryString:(NSString *)url :(NSString *)queryItem;
 @end

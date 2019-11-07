@@ -17,21 +17,21 @@
 #import "UIPopoverListView.h"
 #import "XHDrawerController.h"
 #import "OLGhostAlertView.h"
+#import "ASIHTTPRequest.h"
 @interface DDIVLoginMain : UIViewController <UITextFieldDelegate,NSURLConnectionDelegate,UIAlertViewDelegate,UIPopoverListViewDelegate,UIPopoverListViewDataSource>
 {
     NSMutableArray *userListArray;
     UIPopoverListView *popView;
     NSUserDefaults *userDefaultes;
+    NSMutableArray *requestArray;
 }
 - (IBAction)TestLogin:(id)sender;
-@property (weak, nonatomic) IBOutlet UIImageView *bgImage;
 @property (weak, nonatomic) IBOutlet UIImageView *loginImage;
 @property (weak, nonatomic) IBOutlet UITextField *userName;
 @property (weak, nonatomic) IBOutlet UIButton *loginButton;
 @property (weak, nonatomic) IBOutlet UITextField *passWord;
-@property (weak, nonatomic) IBOutlet UILabel *labelTip;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *indicator;
-@property (weak, nonatomic) IBOutlet UIButton *demoBtn;
+@property (weak, nonatomic) IBOutlet UILabel *showVersion;
 
 //接收从服务器返回数据。
 @property (strong,nonatomic) NSMutableData *datas;

@@ -232,9 +232,14 @@ extern NSString *kInitURL;
             self.classRoom.text=[dict objectForKey:@"教室"];
             self.courseJiLv.text=[dict objectForKey:@"课堂纪律"];
             self.courseWeiSheng.text=[dict objectForKey:@"教室卫生"];
-            NSString *chuqinrenName=[teacherInfoDic objectForKey:@"姓名"];
-            NSArray *tmpArray=[chuqinrenName componentsSeparatedByString:@"["];
-            self.chuqinren.text=[[tmpArray objectAtIndex:0] stringByAppendingString:@"的出勤"];
+            if(kUserType==1)
+                self.chuqinren.text=@"学生出勤";
+            else
+            {
+                NSString *chuqinrenName=[teacherInfoDic objectForKey:@"姓名"];
+                NSArray *tmpArray=[chuqinrenName componentsSeparatedByString:@"["];
+                self.chuqinren.text=[[tmpArray objectAtIndex:0] stringByAppendingString:@"的出勤"];
+            }
             self.chuqin.text=[dict objectForKey:@"个人出勤"];
             [self.chuqin sizeToFit];
             self.teacherPingjiaNum.text=[NSString stringWithFormat:@"%@人评",[dict objectForKey:@"老师评分数"]];

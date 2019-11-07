@@ -20,6 +20,7 @@
 #import "DDIDataModel.h"
 #import "LinkMan.h"
 #import "CommonFunc.h"
+
 @interface DDILinkManGroup : UIViewController<TQTableViewDataSource, TQTableViewDelegate>
 {
     UIImage *arrayRight;

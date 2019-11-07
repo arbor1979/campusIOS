@@ -30,9 +30,9 @@ extern int kUserType;
     
     [super viewDidLoad];
     if(kUserType==1)
-        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"上传" style:UIBarButtonItemStyleBordered target:self action:@selector(uploadKeJian)];
+        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"上传" style:UIBarButtonItemStyleDone target:self action:@selector(uploadKeJian)];
     else
-        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"刷新" style:UIBarButtonItemStyleBordered target:self action:@selector(reloadKeJian)];
+        rightBtn= [[UIBarButtonItem alloc] initWithTitle:@"刷新" style:UIBarButtonItemStyleDone target:self action:@selector(reloadKeJian)];
     _savePath=[CommonFunc createPath:@"/courseware/"];
     _keJianArray=[[NSMutableArray alloc] init];
     _fileManager=[NSFileManager defaultManager];

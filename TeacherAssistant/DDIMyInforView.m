@@ -108,7 +108,13 @@ extern NSString *kInitURL;
     }
     
 }
-
+-(void)dealClickURL:(UITapGestureRecognizer *)tap
+{
+    UILabel *label = (UILabel *)tap.view;
+    NSLog(@"text = %@",label.text);
+    NSMutableString * str=[[NSMutableString alloc] initWithFormat:@"telprompt:%@",label.text];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:str]];
+}
 -(void)getPersonalInfo
 {
     NSURL *url = [NSURL URLWithString:[kInitURL stringByAppendingString:@"AlbumPraise.php"]];
@@ -386,7 +392,26 @@ extern NSString *kInitURL;
         if([[theTeacherDic objectForKey:title.text] isEqual:[NSNull null]])
             detail.text=@"";
         else
-            detail.text=[theTeacherDic objectForKey:title.text];
+        {
+            NSString *value=[theTeacherDic objectForKey:title.text];
+            detail.text=value;
+            if([CommonFunc isValidateMobile:value] || [CommonFunc isValidateTel:value])
+            {
+                detail.textColor=detail.tintColor;
+                detail.userInteractionEnabled = YES;
+                if(detail.gestureRecognizers==nil || detail.gestureRecognizers.count==0)
+                {
+                    UITapGestureRecognizer *labelTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dealClickURL:)];
+                    [detail addGestureRecognizer:labelTap];
+                }
+            }
+            else
+            {
+                detail.textColor=[UIColor blackColor];
+                detail.userInteractionEnabled = NO;
+                
+            }
+        }
         
         CGSize size = [detail.text sizeWithFont:detail.font constrainedToSize:CGSizeMake(220, 1000) lineBreakMode:NSLineBreakByWordWrapping];
         

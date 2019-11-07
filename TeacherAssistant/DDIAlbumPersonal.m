@@ -285,7 +285,7 @@ extern DDIDataModel *datam;
     {
         NSData *data = [request responseData];
         NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        data   = [[NSData alloc] initWithBase64Encoding:dataStr];
+        data   = [[NSData alloc] initWithBase64EncodedString:dataStr options:0];
         NSData *upzipData = [LFCGzipUtillity uncompressZippedData:data];
         id res = [NSJSONSerialization JSONObjectWithData:upzipData options:NSJSONReadingMutableContainers error:nil];
         if (res && [res isKindOfClass:[NSDictionary class]])

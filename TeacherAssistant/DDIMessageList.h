@@ -37,5 +37,6 @@
 -(void) getHeadImageList:(NSArray *)newMsgList;
 -(void) getUnReadNum;
 -(void)refreshTableAndBadge;
+- (void)getNewMessageFromDB:(NSNotification*)notification;
 @end
 

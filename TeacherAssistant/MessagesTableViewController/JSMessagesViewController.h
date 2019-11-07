@@ -63,6 +63,7 @@ typedef enum {
 @protocol JSMessagesViewDelegate <NSObject>
 @required
 - (void)sendPressed:(UIButton *)sender withText:(NSString *)text;
+- (void)cellOnTap:(JSBubbleView *)view;
 - (void)cameraPressed:(id)sender;
 - (JSBubbleMessageType)messageTypeForRowAtIndexPath:(NSIndexPath *)indexPath;
 - (JSBubbleMessageStyle)messageStyleForRowAtIndexPath:(NSIndexPath *)indexPath;
@@ -85,6 +86,7 @@ typedef enum {
 @protocol JSMessagesViewDataSource <NSObject>
 @required
 - (NSString *)textForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (NSString *)linkUrlForRowAtIndexPath:(NSIndexPath *)indexPath;
 - (NSDate *)timestampForRowAtIndexPath:(NSIndexPath *)indexPath;
 - (NSMutableArray *)sendDestForRowAtIndexPath:(NSIndexPath *)indexPath;
 - (UIImage *)avatarImageForIncomingMessage;
@@ -96,7 +98,7 @@ typedef enum {
 
 
 
-@interface JSMessagesViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UITextViewDelegate, JSMessageInputViewDelegate,EGORefreshTableHeaderDelegate>
+@interface JSMessagesViewController : UIViewController <UITableViewDataSource, UITableViewDelegate, UITextViewDelegate, JSMessageInputViewDelegate,EGORefreshTableHeaderDelegate,MessageCellDelegate>
 {
     EGORefreshTableHeaderView *_refreshHeaderView;
     BOOL _reloading;

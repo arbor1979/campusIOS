@@ -75,10 +75,13 @@ extern DDIDataModel *datam;
         [_btnHead setImage:headImage forState:UIControlStateNormal];
     }
 }
+
 - (void)requestFinished:(ASIHTTPRequest *)request
 {
     if([request.username isEqualToString:@"更改密码"])
     {
+        if(tipAlert)
+            [tipAlert hide];
         NSData *datas = [request responseData];
         NSString *dataStr=[[NSString alloc] initWithData:datas encoding:NSUTF8StringEncoding];
         dataStr=[GTMBase64 stringByBase64String:dataStr];
@@ -112,6 +115,17 @@ extern DDIDataModel *datam;
         }
     }
 }
+- (void)requestFailed:(ASIHTTPRequest *)request
+{
+    if(tipAlert)
+        [tipAlert hide];
+    NSError *error = [request error];
+    OLGhostAlertView *tipView = [[OLGhostAlertView alloc] initWithTitle:[error localizedDescription]];
+    [tipView show];
+    if([requestArray containsObject:request])
+        [requestArray removeObject:request];
+    request=nil;
+}
 -(void)dealloc
 {
     for(ASIHTTPRequest *req in requestArray)
@@ -135,9 +149,11 @@ extern DDIDataModel *datam;
     if (lastMsgDic)
         lastMsgDic=nil;
     [DDIHelpView setLoginDate:nil];
-    [self.parentViewController dismissViewControllerAnimated:YES completion:nil];
+    //[self.parentViewController dismissViewControllerAnimated:YES completion:nil];
     //[self dismissViewControllerAnimated:YES completion:nil];
-    
+    [userDefaultes setObject:nil forKey:@"用户名"];
+    DDIVLoginMain *loginController = [self.storyboard instantiateViewControllerWithIdentifier:@"loginmain"];
+    [UIApplication sharedApplication].keyWindow.rootViewController=loginController;
 }
 -(UIBarButtonItem *) setupNavBackBtn
 {
@@ -203,11 +219,9 @@ extern DDIDataModel *datam;
     {
         DDIHelpView *controller=[self.storyboard instantiateViewControllerWithIdentifier:@"HelpView"];
         UINavigationController *nav=[[UINavigationController alloc] initWithRootViewController:controller];
-        controller.navigationItem.leftBarButtonItem=[self setupNavBackBtn];
-
+        //controller.navigationItem.leftBarButtonItem=[self setupNavBackBtn];
         controller.navigationItem.title=@"关于我们";
-        controller.urlStr=@"http://www.dandian.net/company/ICampus-aboutus.php";
-
+        controller.urlStr=[NSString stringWithFormat:@"http://laoshi.dandian.net/yingxin/aboutus.php?school=%@",kUserIndentify];
         [self presentViewController:nav animated:true completion:nil];
         
     }
@@ -324,6 +338,8 @@ extern DDIDataModel *datam;
                     request.username=@"更改密码";
                     [requestArray addObject:request];
                     [request startAsynchronous];
+                    tipAlert=[[OLGhostAlertView alloc] initWithIndicator:@"修改密码中，请稍候" timeout:0 dismissible:NO];
+                    [tipAlert show];
                 }
             }
         }

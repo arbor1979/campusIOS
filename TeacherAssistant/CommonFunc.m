@@ -652,4 +652,68 @@ NSDate *today = [cal dateByAddingComponents:components toDate:[[NSDate alloc] in
                                           context:nil].size;
     return labelSize;
 }
++(UITableView *)getTableViewByCell:(UITableViewCell *)cell
+{
+    UIView *tableView=cell.superview;
+    while(![tableView isKindOfClass:[UITableView class]] && tableView)
+        tableView=tableView.superview;
+    return (UITableView *)tableView;
+}
++(NSString *) getLocalLanguage
+{
+    NSArray *languages = [NSLocale preferredLanguages];
+    NSString *currentLanguage = [languages objectAtIndex:0];
+    if([currentLanguage isEqualToString:@"zh-Hans"])
+        currentLanguage=@"cn";
+    else if ([currentLanguage isEqualToString:@"zh-Hant"] || [currentLanguage isEqualToString:@"zh-HK"])
+        currentLanguage=@"tw";
+    else
+        currentLanguage=@"us";
+    return currentLanguage;
+}
++(BOOL) isValidateMobile:(NSString *)mobile
+{
+    NSPredicate* phoneTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", @"1[3456789]([0-9]){9}"];
+    return [phoneTest evaluateWithObject:mobile];
+}
++(BOOL) isValidateTel:(NSString *)tel
+{
+    NSPredicate* phoneTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", @"^(0[\\d]{2,3}-?\\d{7,8}$)"];
+    NSPredicate* phoneTest1 = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", @"^(\\d{7,8}$)"];
+    return ([phoneTest evaluateWithObject:tel] ||[phoneTest1 evaluateWithObject:tel]);
+}
+//判断是否为整形：
++(BOOL)isPureInt:(NSString*)string{
+    NSScanner* scan = [NSScanner scannerWithString:string];
+    int val;
+    return[scan scanInt:&val] && [scan isAtEnd];
+}
+//判断是否为浮点形：
++(BOOL)isPureFloat:(NSString*)string{
+    NSScanner* scan = [NSScanner scannerWithString:string];
+    float val;
+    return[scan scanFloat:&val] && [scan isAtEnd];
+}
+//验证邮箱格式
++(BOOL)isValidateEmail:(NSString *)email
+{
+    NSString *emailRegex = @"[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}";
+    NSPredicate *emailTest = [NSPredicate predicateWithFormat:@"SELF MATCHES%@",emailRegex];
+    return [emailTest evaluateWithObject:email];
+}
+//从url中查询参数的值
++(NSString *)findUrlQueryString:(NSString *)url :(NSString *)queryItem
+{
+    NSArray *tmparray=[url componentsSeparatedByString:@"?"];
+    NSString *querystr=[tmparray objectAtIndex:tmparray.count-1];
+    tmparray=[querystr componentsSeparatedByString:@"&"];
+    for(NSString *item in tmparray)
+    {
+        NSArray *subarray=[item componentsSeparatedByString:@"="];
+        if([[subarray objectAtIndex:0] isEqualToString:queryItem])
+            return [subarray objectAtIndex:1];
+    }
+    return @"";
+}
+
 @end
