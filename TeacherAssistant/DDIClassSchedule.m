@@ -584,6 +584,7 @@ numberOfRowsInComponent:(NSInteger)component {
     [super viewDidAppear:animated];
     
 }
+
 -(void)dropdownmenu:(id)sender
 {
     NSString *banjistr=[userInfoDic objectForKey:@"管辖班级"];

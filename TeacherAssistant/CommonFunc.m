@@ -281,7 +281,8 @@ NSDate *today = [cal dateByAddingComponents:components toDate:[[NSDate alloc] in
     [dateFormatter setDateFormat: @"yyyy-MM-dd HH:mm:ss"];
  
     NSDate *destDate= [dateFormatter dateFromString:dateString];
-    
+    if(destDate==nil)
+        destDate=[NSDate date];
     return destDate;
     
 }
@@ -293,7 +294,8 @@ NSDate *today = [cal dateByAddingComponents:components toDate:[[NSDate alloc] in
     [dateFormatter setDateFormat: @"yyyy-MM-dd"];
     
     NSDate *destDate= [dateFormatter dateFromString:dateString];
-    
+    if(destDate==nil)
+        destDate=[NSDate date];
     return destDate;
     
 }

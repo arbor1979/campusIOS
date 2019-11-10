@@ -828,7 +828,14 @@ extern int kSchoolId;
                  {
                      DDIHelpView *controller=[self.storyboard instantiateViewControllerWithIdentifier:@"HelpView"];
                      controller.navigationItem.title=targettitle;
-                     jumpurl=[NSString stringWithFormat:@"%@jiaoyanma=%@",jumpurl,kUserIndentify];
+                     NSMutableDictionary *dic=[NSMutableDictionary dictionary];
+                     [dic setObject:kUserIndentify forKey:@"用户较验码"];
+                     NSNumber *timeStamp=[[NSNumber alloc] initWithLong:[[NSDate new] timeIntervalSince1970]];
+                     [dic setObject:timeStamp forKey:@"DATETIME"];
+                     NSError *error;
+                     NSData *postData=[NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&error];
+                     NSString *postStr=[GTMBase64 stringByWebSafeEncodingData:postData padded:YES];
+                     jumpurl=[NSString stringWithFormat:@"%@jiaoyanma=%@",jumpurl,postStr];
                      controller.urlStr=jumpurl;
                      [self.navigationController pushViewController:controller animated:YES];
                  }
